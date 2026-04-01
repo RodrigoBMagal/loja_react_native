@@ -54,8 +54,12 @@ const AddEditProductScreen = ({ navigation, route }) => {
     if (!dateStr || dateStr.length !== 10) return null;
     const [d, m, y] = dateStr.split('/');
     if (!d || !m || !y) return null;
-    const date = new Date(`${y}-${m}-${d}`);
-    return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
+    // Cria a data no timezone local, não em UTC
+    const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const parseISOToDisplay = (isoStr) => {

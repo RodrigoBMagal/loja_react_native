@@ -106,7 +106,7 @@ const LoginScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1B5E20',
+    backgroundColor: '#0084ff',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   input: { flex: 1, height: 48, fontSize: 15, color: '#333' },
   eyeBtn: { padding: 4 },
   button: {
-    marginTop: 28, backgroundColor: '#2E7D32',
+    marginTop: 28, backgroundColor: '#0084ff',
     borderRadius: 10, height: 50,
     alignItems: 'center', justifyContent: 'center',
   },
