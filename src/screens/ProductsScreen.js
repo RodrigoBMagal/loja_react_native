@@ -12,7 +12,10 @@ const ProductItem = ({ product, onEdit, onDelete, onUpdateQty }) => {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('pt-BR');
+    // Parse a data ISO (YYYY-MM-DD) corretamente no timezone local
+    const [y, m, d] = dateStr.split('-');
+    const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+    return date.toLocaleDateString('pt-BR');
   };
 
   const statusColor = isOut ? '#C62828' : isLow ? '#E65100' : '#2E7D32';
