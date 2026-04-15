@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { productsApi } from '../services/api';
 
 const StockContext = createContext();
 const STORAGE_KEY = '@vetstock_products';
@@ -26,21 +28,16 @@ export const StockProvider = ({ children }) => {
   }, []);
 
   const loadProducts = async () => {
-    try {
-      const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setProducts(JSON.parse(stored));
-      } else {
-        setProducts(INITIAL_PRODUCTS);
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_PRODUCTS));
-      }
-    } catch (error) {
-      console.error('Erro ao carregar produtos:', error);
-      setProducts(INITIAL_PRODUCTS);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    setLoading(true);
+    const data = await productsApi.getAll(); // busca do banco
+    setProducts(data);
+  } catch (err) {
+    Alert.alert('Erro', 'Não foi possível carregar o estoque.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const persist = async (newProducts) => {
     setProducts(newProducts);
@@ -51,35 +48,26 @@ export const StockProvider = ({ children }) => {
     }
   };
 
-  const addProduct = useCallback(async (product) => {
-    const newProduct = {
-      ...product,
-      id: Date.now().toString(),
-      lastUpdated: new Date().toISOString(),
-    };
-    await persist([...products, newProduct]);
+  const addProduct = async (product) => {
+    const newProduct = await productsApi.create(product);
+    setProducts(prev => [...prev, newProduct]);
     return newProduct;
-  }, [products]);
+};
 
-  const updateProduct = useCallback(async (id, updatedData) => {
-    const updated = products.map(p =>
-      p.id === id ? { ...p, ...updatedData, id, lastUpdated: new Date().toISOString() } : p
-    );
-    await persist(updated);
-  }, [products]);
+  const updateProduct = async (id, data) => {
+    const updated = await productsApi.update(id, data);
+    setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
+};
 
-  const deleteProduct = useCallback(async (id) => {
-    await persist(products.filter(p => p.id !== id));
-  }, [products]);
+  const deleteProduct = async (id) => {
+    await productsApi.delete(id);
+    setProducts(prev => prev.filter(p => p.id !== id));
+};
 
-  const updateQuantity = useCallback(async (id, delta) => {
-    const updated = products.map(p =>
-      p.id === id
-        ? { ...p, quantity: Math.max(0, p.quantity + delta), lastUpdated: new Date().toISOString() }
-        : p
-    );
-    await persist(updated);
-  }, [products]);
+  const updateQuantity = async (id, delta) => {
+    const updated = await productsApi.updateQuantity(id, delta);
+    setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
+};
 
   const getLowStockProducts = useCallback(() =>
     products.filter(p => p.quantity <= p.minQuantity),
@@ -98,7 +86,7 @@ export const StockProvider = ({ children }) => {
   const getStats = useCallback(() => {
     const lowStock = getLowStockProducts();
     const outOfStock = products.filter(p => p.quantity === 0);
-    const totalValue = products.reduce((acc, p) => acc + p.price * p.quantity, 0);
+    const totalValue = products.reduce((acc, p) => acc + (parseFloat(p.price) * parseFloat(p.quantity)), 0);
     const categories = [...new Set(products.map(p => p.category))];
     return {
       total: products.length,

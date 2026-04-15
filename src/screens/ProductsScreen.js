@@ -50,7 +50,7 @@ const ProductItem = ({ product, onEdit, onDelete, onUpdateQty }) => {
         <View style={styles.detailItem}>
           <Text style={styles.detailLabel}>Preço Unit.</Text>
           <Text style={styles.detailValue}>
-            R$ {product.price.toFixed(2)}
+            R$ {parseFloat(product.price).toFixed(2)}
           </Text>
         </View>
         <View style={styles.detailItem}>
@@ -123,8 +123,8 @@ const ProductsScreen = ({ navigation }) => {
     }
     list.sort((a, b) => {
       if (sortBy === 'name') return a.name.localeCompare(b.name);
-      if (sortBy === 'qty') return a.quantity - b.quantity;
-      if (sortBy === 'price') return a.price - b.price;
+      if (sortBy === 'qty') return parseFloat(a.quantity) - parseFloat(b.quantity);
+      if (sortBy === 'price') return parseFloat(a.price) - parseFloat(b.price);
       return 0;
     });
     return list;

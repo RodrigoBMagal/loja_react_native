@@ -26,6 +26,19 @@ router.post('/', async (req, res) => {
     res.status(201).json(rows[0]);
 });
 
+// PUT /products/:id - Atualizar um produto
+router.put('/:id', async (req, res) => {
+    const {name, category, quantity, min_quantity, unit, price, supplier, expiry_date} = req.body;
+
+    const {rows} = await pool.query(
+        `UPDATE products
+         SET name = $1, category = $2, quantity = $3, min_quantity = $4, unit = $5, price = $6, supplier = $7, expiry_date = $8, last_updated = NOW()
+         WHERE id = $9 RETURNING *`,
+        [name, category, quantity, min_quantity, unit, price, supplier, expiry_date, req.params.id]
+    );
+    res.json(rows[0]);
+});
+
 // PATCH /products/:id/quantity - Atualizar a quantidade de um produto
 router.patch('/:id/quantity', async (req, res) => {
     const {delta} = req.body;

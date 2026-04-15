@@ -1,0 +1,90 @@
+INSTRUÇÕES DE INICIALIZAÇÃO RÁPIDA
+===================================
+
+PASSO 1: CONFIGURAR BANCO DE DADOS
+----------------------------------
+1. Abra PostgreSQL (pgAdmin ou linha de comando)
+2. Crie um banco de dados:
+   CREATE DATABASE vetstock;
+
+3. No arquivo vetstock-backend/.env, atualize a linha:
+   DATABASE_URL=postgresql://seu_usuario:sua_senha@localhost:5432/vetstock
+
+PASSO 2: INSTALAR DEPENDÊNCIAS ✅ (JÁ FEITO)
+---------------------------------------------
+- npm install (na pasta raiz)
+- npm install (na pasta vetstock-backend)
+
+
+PASSO 3: INICIALIZAR BANCO DE DADOS
+------------------------------------
+Abra um terminal na pasta vetstock-backend:
+  npm run seed
+
+Isso criará as tabelas e inserirá dados de teste:
+  - Admin: admin / 123456
+  - Funcionário: funcionario / 123456
+  - 5 produtos de teste
+
+
+PASSO 4: INICIAR O BACKEND
+--------------------------
+Terminal 1 - em vetstock-backend/:
+  npm start     (produção)
+  npm run dev   (desenvolvimento com reload automático)
+
+Deve aparecer:
+  Server running on port 3000
+
+
+PASSO 5: ATUALIZAR URL DA API (SE NECESSÁRIO)
+---------------------------------------------
+Se o backend está em outra máquina, atualize:
+  src/services/api.js
+  const BASE_URL = 'http://192.168.1.X:3000';
+  (substitua X pelo seu IP)
+
+
+PASSO 6: INICIAR O FRONTEND
+---------------------------
+Terminal 2 - na pasta raiz:
+  npm start
+
+Escolha a opção desejada:
+  - w: web
+  - a: android
+  - i: iOS
+
+Para web, a app abrirá em http://localhost:3000
+
+
+VERIFICAÇÃO
+-----------
+✅ Backend rodando: http://localhost:3000/health (deve retornar {"status":"ok"})
+✅ Banco conectado: Tentar login com admin/123456
+✅ Frontend conectado: App carrega sem erros de conexão
+
+
+ESTRUTURA DE PERMISSÕES
+-----------------------
+Role: admin - Acesso total
+Role: funcionario - Acesso limitado
+
+
+TROUBLESHOOTING
+---------------
+❌ Erro: Cannot connect to database
+   → PostgreSQL não está rodando
+   → Credenciais incorretas em .env
+   → Banco vetstock não existe
+
+❌ Erro: PORT 3000 already in use
+   → Mudar PORT em .env
+   → Ou encerrar processo: netstat -ano | findstr :3000
+
+❌ Erro: 401 Unauthorized
+   → Token não enviado corretamente
+   → Verificar middleware/auth.js
+   → Usuário não existe no banco
+
+✅ Tudo pronto! Acesso com admin/123456

@@ -5,11 +5,11 @@ import {
   ActivityIndicator, Image, Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { authApi } from '../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const USERS = [
-  { username: 'admin', password: 'admin123', role: 'Administrador' },
-  { username: 'funcionario', password: '1234', role: 'Funcionário' },
-];
+// Usuários são autenticados contra o backend
+// Credenciais padrão: admin/123456 ou funcionario/123456
 
 const LoginScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
@@ -18,23 +18,26 @@ const LoginScreen = ({ navigation }) => {
   const [showPass, setShowPass] = useState(false);
 
   const handleLogin = async () => {
-    if (!username.trim() || !password.trim()) {
-      Alert.alert('Atenção', 'Preencha o usuário e a senha.');
-      return;
-    }
-    setLoading(true);
-    setTimeout(() => {
-      const user = USERS.find(
-        u => u.username === username.trim() && u.password === password.trim()
-      );
-      setLoading(false);
-      if (user) {
-        navigation.replace('Main', { user });
-      } else {
-        Alert.alert('Acesso negado', 'Usuário ou senha incorretos.\n\nDica: admin / admin123');
-      }
-    }, 800);
-  };
+  if (!username.trim() || !password.trim()) {
+    Alert.alert('Atenção', 'Preencha usuário e senha.');
+    return;
+  }
+  setLoading(true);
+  try {
+    // Chama o backend real
+    const { token, user } = await authApi.login(username.trim(), password.trim());
+
+    // Salva o token para uso nas próximas requisições
+    await AsyncStorage.setItem('@vetstock_token', token);
+    await AsyncStorage.setItem('@vetstock_user', JSON.stringify(user));
+
+    navigation.replace('Main', { user });
+  } catch (err) {
+    Alert.alert('Acesso negado', err.message || 'Usuário ou senha incorretos.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <KeyboardAvoidingView
@@ -96,8 +99,6 @@ const LoginScreen = ({ navigation }) => {
             : <Text style={styles.buttonText}>Acessar Sistema</Text>
           }
         </TouchableOpacity>
-
-        <Text style={styles.hint}>Usuário padrão: admin / admin123</Text>
       </View>
     </KeyboardAvoidingView>
   );

@@ -27,7 +27,7 @@ const HomeScreen = ({ navigation, route }) => {
   };
 
   const formatCurrency = (v) =>
-    v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    parseFloat(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   const formatDate = () => {
     const d = new Date();
