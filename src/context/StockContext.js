@@ -72,16 +72,9 @@ export const StockProvider = ({ children }) => {
 
   const deleteProduct = async (id) => {
     try {
-      console.log('�️ Deleting product ID:', id);
-      const result = await productsApi.delete(id);
-      console.log('✅ Delete response:', result);
-      setProducts(prev => {
-        const filtered = prev.filter(p => p.id !== id);
-        console.log(`📦 Removed product. Remaining: ${filtered.length}`);
-        return filtered;
-      });
+      await productsApi.delete(id);
+      setProducts(prev => prev.filter(p => p.id !== id));
     } catch (err) {
-      console.error('❌ Delete failed:', err.message);
       Alert.alert('Erro', 'Não foi possível excluir o produto: ' + err.message);
       throw err;
     }

@@ -84,10 +84,21 @@ const ProductItem = ({ product, onEdit, onDelete, onUpdateQty }) => {
           Atualizado: {new Date(product.lastUpdated).toLocaleDateString('pt-BR')}
         </Text>
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.editBtn} onPress={() => onEdit(product)}>
+          <TouchableOpacity 
+            style={styles.editBtn} 
+            onPress={() => {
+              console.log('✏️ Edit button pressed!');
+              onEdit(product);
+            }}
+            activeOpacity={0.6}
+          >
             <Text style={styles.editBtnText}>✏️ Editar</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.deleteBtn} onPress={() => onDelete(product)}>
+          <TouchableOpacity 
+            style={styles.deleteBtn} 
+            onPress={() => onDelete(product)}
+            activeOpacity={0.6}
+          >
             <Text style={styles.deleteBtnText}>🗑️</Text>
           </TouchableOpacity>
         </View>
@@ -103,6 +114,7 @@ const ProductsScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [sortBy, setSortBy] = useState('name');
   const [showFilter, setShowFilter] = useState(false);
+  const [deleteModal, setDeleteModal] = useState({ visible: false, product: null });
 
   const handleUpdateQuantity = async (id, delta) => {
     try {
@@ -139,25 +151,7 @@ const ProductsScreen = ({ navigation }) => {
   }, [products, search, selectedCategory, sortBy]);
 
   const handleDelete = (product) => {
-    Alert.alert(
-      'Confirmar exclusão',
-      `Deseja remover "${product.name}" do estoque?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Remover',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteProduct(product.id);
-              Alert.alert('Sucesso', 'Produto removido do estoque!');
-            } catch (err) {
-              console.error('❌ Delete error:', err.message);
-            }
-          },
-        },
-      ]
-    );
+    setDeleteModal({ visible: true, product });
   };
 
   const handleEdit = (product) => {
@@ -260,6 +254,35 @@ const ProductsScreen = ({ navigation }) => {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Modal de Confirmação de Exclusão */}
+      <Modal visible={deleteModal.visible} transparent animationType="fade" onRequestClose={() => setDeleteModal({ visible: false, product: null })}>
+        <View style={styles.deleteModalOverlay}>
+          <View style={styles.deleteModalContainer}>
+            <Text style={styles.deleteModalTitle}>Confirmar exclusão</Text>
+            <Text style={styles.deleteModalMessage}>
+              Deseja remover "{deleteModal.product?.name}" do estoque?
+            </Text>
+            <View style={styles.deleteModalButtons}>
+              <TouchableOpacity 
+                style={[styles.deleteModalBtn, styles.deleteModalBtnCancel]}
+                onPress={() => setDeleteModal({ visible: false, product: null })}
+              >
+                <Text style={styles.deleteModalBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.deleteModalBtn, styles.deleteModalBtnConfirm]}
+                onPress={() => {
+                  deleteProduct(deleteModal.product?.id);
+                  setDeleteModal({ visible: false, product: null });
+                }}
+              >
+                <Text style={styles.deleteModalBtnTextConfirm}>Remover</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -333,6 +356,16 @@ const styles = StyleSheet.create({
   filterOptActive: { backgroundColor: '#E8F5E9' },
   filterOptText: { fontSize: 15, color: '#555' },
   filterOptTextActive: { color: '#2E7D32', fontWeight: '600' },
+  deleteModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  deleteModalContainer: { backgroundColor: '#fff', borderRadius: 16, padding: 24, width: '80%', maxWidth: 400 },
+  deleteModalTitle: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 12 },
+  deleteModalMessage: { fontSize: 14, color: '#666', marginBottom: 24, lineHeight: 20 },
+  deleteModalButtons: { flexDirection: 'row', gap: 12, justifyContent: 'flex-end' },
+  deleteModalBtn: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, minWidth: 100, alignItems: 'center' },
+  deleteModalBtnCancel: { backgroundColor: '#E0E0E0' },
+  deleteModalBtnConfirm: { backgroundColor: '#C62828' },
+  deleteModalBtnText: { fontSize: 14, fontWeight: '600', color: '#333' },
+  deleteModalBtnTextConfirm: { fontSize: 14, fontWeight: '600', color: '#fff' },
 });
 
 export default ProductsScreen;

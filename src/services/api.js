@@ -8,6 +8,7 @@ const normalizeProduct = (product) => {
         ...product,
         minQuantity: product.min_quantity,
         lastUpdated: product.last_updated,
+        expiryDate: product.expiry_date,
     };
 };
 
@@ -16,10 +17,11 @@ const normalizeProductList = (products) => {
 };
 
 const denormalizeProduct = (product) => {
-    const { minQuantity, lastUpdated, ...rest } = product;
+    const { minQuantity, lastUpdated, expiryDate, ...rest } = product;
     return {
         ...rest,
         min_quantity: minQuantity,
+        expiry_date: expiryDate,
     };
 };
 
@@ -35,17 +37,13 @@ const request = async (endpoint, options = {}) => {
             ...options
         });
         
-        console.log(`📡 ${options.method || 'GET'} ${endpoint} → ${response.status}`);
-        
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
-            console.error('❌ API error:', err);
             throw new Error(err.error || `Erro ${response.status}`);
         }
 
         // Para 204 No Content e 200 com body vazio
         if (response.status === 204 || response.headers.get('content-length') === '0') {
-            console.log('✅ Empty response');
             return null;
         }
         
@@ -60,7 +58,7 @@ const request = async (endpoint, options = {}) => {
         }
         return data;
     } catch (err) {
-        console.error(`❌ Request error for ${endpoint}:`, err.message);
+        console.error(`Error for ${endpoint}:`, err.message);
         throw err;
     }
 };
@@ -78,9 +76,5 @@ export const productsApi = {
     create: (data) => request('/products', {method: 'POST', body: JSON.stringify(denormalizeProduct(data))}),
     update: (id, data) => request(`/products/${id}`, {method: 'PUT', body: JSON.stringify(denormalizeProduct(data))}),
     updateQuantity: (id, delta) => request(`/products/${id}/quantity`, {method: 'PATCH', body: JSON.stringify({delta})}),
-    delete: (id) => {
-        const url = `/products/${id}`;
-        console.log('🌐 DELETE request to:', url, 'ID type:', typeof id, 'ID value:', id);
-        return request(url, {method: 'DELETE'});
-    },
+    delete: (id) => request(`/products/${id}`, {method: 'DELETE'}),
 }

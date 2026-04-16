@@ -38,7 +38,7 @@ const AddEditProductScreen = ({ navigation, route }) => {
   const [unit, setUnit] = useState(existing?.unit || '');
   const [price, setPrice] = useState(existing?.price ? String(existing.price) : '');
   const [supplier, setSupplier] = useState(existing?.supplier || '');
-  const [expiryDate, setExpiryDate] = useState(existing?.expiryDate || '');
+  const [expiryDate, setExpiryDate] = useState('');
   const [saving, setSaving] = useState(false);
 
   const UNITS = ['comprimidos', 'cápsulas', 'frascos', 'ampolas', 'doses', 'unidades', 'kg', 'g', 'ml', 'litros'];
@@ -64,15 +64,19 @@ const AddEditProductScreen = ({ navigation, route }) => {
 
   const parseISOToDisplay = (isoStr) => {
     if (!isoStr) return '';
-    const [y, m, d] = isoStr.split('-');
+    const parts = isoStr.split('-');
+    if (parts.length !== 3) return '';
+    const [y, m, d] = parts;
     return `${d}/${m}/${y}`;
   };
 
   useEffect(() => {
     if (existing?.expiryDate) {
-      setExpiryDate(parseISOToDisplay(existing.expiryDate));
+      const displayDate = parseISOToDisplay(existing.expiryDate);
+      console.log('Setting expiry date from existing:', existing.expiryDate, '→', displayDate);
+      setExpiryDate(displayDate);
     }
-  }, []);
+  }, [existing]);
 
   const validate = () => {
     if (!name.trim()) { Alert.alert('Erro', 'Informe o nome do produto.'); return false; }
