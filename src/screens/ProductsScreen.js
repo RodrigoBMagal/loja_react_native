@@ -97,12 +97,20 @@ const ProductItem = ({ product, onEdit, onDelete, onUpdateQty }) => {
 };
 
 const ProductsScreen = ({ navigation }) => {
-  const { products, deleteProduct, updateQuantity, loading, reload } = useStock();
+  const { products, deleteProduct, updateQuantity: updateQtyApi, loading, reload } = useStock();
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todas');
   const [refreshing, setRefreshing] = useState(false);
   const [sortBy, setSortBy] = useState('name');
   const [showFilter, setShowFilter] = useState(false);
+
+  const handleUpdateQuantity = async (id, delta) => {
+    try {
+      await updateQtyApi(id, delta);
+    } catch (err) {
+      // Erro já foi tratado pelo contexto
+    }
+  };
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -139,7 +147,14 @@ const ProductsScreen = ({ navigation }) => {
         {
           text: 'Remover',
           style: 'destructive',
-          onPress: () => deleteProduct(product.id),
+          onPress: async () => {
+            try {
+              await deleteProduct(product.id);
+              Alert.alert('Sucesso', 'Produto removido do estoque!');
+            } catch (err) {
+              console.error('❌ Delete error:', err.message);
+            }
+          },
         },
       ]
     );
@@ -201,7 +216,7 @@ const ProductsScreen = ({ navigation }) => {
             product={item}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            onUpdateQty={updateQuantity}
+            onUpdateQty={handleUpdateQuantity}
           />
         )}
         contentContainerStyle={{ padding: 12, paddingBottom: 80 }}

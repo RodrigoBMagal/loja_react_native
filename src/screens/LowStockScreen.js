@@ -72,8 +72,16 @@ const LowStockItem = ({ product, onEdit, onUpdateQty }) => {
 };
 
 const LowStockScreen = ({ navigation }) => {
-  const { getLowStockProducts, updateQuantity, reload } = useStock();
+  const { getLowStockProducts, updateQuantity: updateQtyApi, reload } = useStock();
   const [refreshing, setRefreshing] = useState(false);
+
+  const handleUpdateQuantity = async (id, delta) => {
+    try {
+      await updateQtyApi(id, delta);
+    } catch (err) {
+      // Erro já foi tratado pelo contexto
+    }
+  };
 
   const lowStock = getLowStockProducts();
   const outOfStock = lowStock.filter(p => p.quantity === 0);
@@ -138,7 +146,7 @@ const LowStockScreen = ({ navigation }) => {
                         key={product.id}
                         product={product}
                         onEdit={(p) => navigation.navigate('AddEditProduct', { product: p, mode: 'edit' })}
-                        onUpdateQty={updateQuantity}
+                        onUpdateQty={handleUpdateQuantity}
                       />
                     ))}
                   </View>

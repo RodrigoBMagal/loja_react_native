@@ -49,24 +49,53 @@ export const StockProvider = ({ children }) => {
   };
 
   const addProduct = async (product) => {
-    const newProduct = await productsApi.create(product);
-    setProducts(prev => [...prev, newProduct]);
-    return newProduct;
+    try {
+      const newProduct = await productsApi.create(product);
+      setProducts(prev => [...prev, newProduct]);
+      return newProduct;
+    } catch (err) {
+      Alert.alert('Erro', 'Não foi possível adicionar o produto: ' + err.message);
+      throw err;
+    }
 };
 
   const updateProduct = async (id, data) => {
-    const updated = await productsApi.update(id, data);
-    setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
+    try {
+      const updated = await productsApi.update(id, data);
+      setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
+      return updated;
+    } catch (err) {
+      Alert.alert('Erro', 'Não foi possível atualizar o produto: ' + err.message);
+      throw err;
+    }
 };
 
   const deleteProduct = async (id) => {
-    await productsApi.delete(id);
-    setProducts(prev => prev.filter(p => p.id !== id));
+    try {
+      console.log('�️ Deleting product ID:', id);
+      const result = await productsApi.delete(id);
+      console.log('✅ Delete response:', result);
+      setProducts(prev => {
+        const filtered = prev.filter(p => p.id !== id);
+        console.log(`📦 Removed product. Remaining: ${filtered.length}`);
+        return filtered;
+      });
+    } catch (err) {
+      console.error('❌ Delete failed:', err.message);
+      Alert.alert('Erro', 'Não foi possível excluir o produto: ' + err.message);
+      throw err;
+    }
 };
 
   const updateQuantity = async (id, delta) => {
-    const updated = await productsApi.updateQuantity(id, delta);
-    setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
+    try {
+      const updated = await productsApi.updateQuantity(id, delta);
+      setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
+      return updated;
+    } catch (err) {
+      Alert.alert('Erro', 'Não foi possível atualizar a quantidade: ' + err.message);
+      throw err;
+    }
 };
 
   const getLowStockProducts = useCallback(() =>
