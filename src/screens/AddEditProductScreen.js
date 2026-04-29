@@ -51,11 +51,29 @@ const AddEditProductScreen = ({ navigation, route }) => {
   };
 
   const parseDateToISO = (dateStr) => {
-    if (!dateStr || dateStr.length !== 10) return null;
-    const [d, m, y] = dateStr.split('/');
-    if (!d || !m || !y) return null;
-    // Cria a data no timezone local, não em UTC
+    if (!dateStr) return null;
+
+    // Aceita formatos DD/MM/AAAA e YYYY-MM-DD ou ISO datetime
+    if (dateStr.includes('/')) {
+      const parts = dateStr.split('/');
+      if (parts.length !== 3) return null;
+      const [d, m, y] = parts;
+      if (!d || !m || !y) return null;
+      const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+      if (Number.isNaN(date.getTime())) return null;
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    const normalized = dateStr.replace(/\D/g, '');
+    if (normalized.length !== 8) return null;
+    const d = normalized.slice(0, 2);
+    const m = normalized.slice(2, 4);
+    const y = normalized.slice(4);
     const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+    if (Number.isNaN(date.getTime())) return null;
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -64,6 +82,17 @@ const AddEditProductScreen = ({ navigation, route }) => {
 
   const parseISOToDisplay = (isoStr) => {
     if (!isoStr) return '';
+    if (isoStr.includes('/')) return isoStr;
+
+    const date = new Date(isoStr);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+    }
+
     const parts = isoStr.split('-');
     if (parts.length !== 3) return '';
     const [y, m, d] = parts;
@@ -71,11 +100,16 @@ const AddEditProductScreen = ({ navigation, route }) => {
   };
 
   useEffect(() => {
-    if (existing?.expiryDate) {
-      const displayDate = parseISOToDisplay(existing.expiryDate);
-      console.log('Setting expiry date from existing:', existing.expiryDate, '→', displayDate);
-      setExpiryDate(displayDate);
-    }
+    if (!existing) return;
+
+    setName(existing.name || '');
+    setCategory(existing.category || CATEGORIES[0]);
+    setQuantity(String(existing.quantity ?? ''));
+    setMinQuantity(String(existing.minQuantity ?? ''));
+    setUnit(existing.unit || '');
+    setPrice(existing.price != null ? String(existing.price) : '');
+    setSupplier(existing.supplier || '');
+    setExpiryDate(existing.expiryDate ? parseISOToDisplay(existing.expiryDate) : '');
   }, [existing]);
 
   const validate = () => {
@@ -85,7 +119,10 @@ const AddEditProductScreen = ({ navigation, route }) => {
     if (!unit.trim()) { Alert.alert('Erro', 'Informe a unidade de medida.'); return false; }
     if (!price.trim() || isNaN(Number(price)) || Number(price) < 0) { Alert.alert('Erro', 'Informe um preço válido.'); return false; }
     if (!supplier.trim()) { Alert.alert('Erro', 'Informe o fornecedor.'); return false; }
-    if (expiryDate && expiryDate.length > 0 && expiryDate.length !== 10) { Alert.alert('Erro', 'Data de validade inválida. Use DD/MM/AAAA.'); return false; }
+    if (expiryDate && expiryDate.length > 0) {
+      const parsed = parseDateToISO(expiryDate);
+      if (!parsed) { Alert.alert('Erro', 'Data de validade inválida. Use DD/MM/AAAA.'); return false; }
+    }
     return true;
   };
 

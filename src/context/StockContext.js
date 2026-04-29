@@ -91,10 +91,42 @@ export const StockProvider = ({ children }) => {
     }
 };
 
+  const parseExpiryDate = (expiryDate) => {
+    if (!expiryDate) return null;
+    const [y, m, d] = expiryDate.split('-');
+    if (!y || !m || !d) return null;
+    return new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10));
+  };
+
   const getLowStockProducts = useCallback(() =>
     products.filter(p => p.quantity <= p.minQuantity),
     [products]
   );
+
+  const getExpiredProducts = useCallback(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return products.filter(p => {
+      const date = parseExpiryDate(p.expiryDate);
+      return date && date < today;
+    });
+  }, [products]);
+
+  const getExpiringProducts = useCallback(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return products.filter(p => {
+      const date = parseExpiryDate(p.expiryDate);
+      if (!date) return false;
+      const diffDays = Math.ceil((date - today) / (1000 * 60 * 60 * 24));
+      return diffDays >= 0 && diffDays <= 30;
+    });
+  }, [products]);
+
+  const getExpiryAlerts = useCallback(() => ({
+    expired: getExpiredProducts(),
+    expiring: getExpiringProducts(),
+  }), [getExpiredProducts, getExpiringProducts]);
 
   const getProductsByCategory = useCallback(() => {
     const map = {};
@@ -128,6 +160,7 @@ export const StockProvider = ({ children }) => {
       deleteProduct,
       updateQuantity,
       getLowStockProducts,
+      getExpiryAlerts,
       getProductsByCategory,
       getStats,
       reload: loadProducts,
