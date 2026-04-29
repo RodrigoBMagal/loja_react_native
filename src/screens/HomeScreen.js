@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#FFF3E0', borderLeftWidth: 4, borderLeftColor: '#E65100',
     margin: 16, borderRadius: 10, padding: 14,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, elevation: 2,
+    elevation: 2,
   },
   alertIcon: { fontSize: 22, marginRight: 10 },
   alertTitle: { fontSize: 14, fontWeight: 'bold', color: '#BF360C' },
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   statCard: {
     width: '46%', margin: '2%', backgroundColor: '#fff',
     borderRadius: 12, padding: 16, borderLeftWidth: 4,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, elevation: 2,
+    elevation: 2,
   },
   statIcon: { fontSize: 22, marginBottom: 8 },
   statValue: { fontSize: 28, fontWeight: 'bold' },
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   valueCard: {
     backgroundColor: '#1B5E20', marginHorizontal: 16, borderRadius: 12,
     padding: 18, marginBottom: 8,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, elevation: 3,
+    elevation: 3,
   },
   valueLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 13 },
   valueAmount: { color: '#fff', fontSize: 28, fontWeight: 'bold', marginTop: 4 },
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   criticalItem: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff',
     borderRadius: 10, padding: 12, marginBottom: 8,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, elevation: 1,
+    elevation: 1,
   },
   categoryDot: { width: 10, height: 10, borderRadius: 5, marginRight: 12 },
   criticalName: { fontSize: 14, fontWeight: '600', color: '#333' },

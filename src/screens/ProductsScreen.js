@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   resultCount: { paddingHorizontal: 16, paddingVertical: 6, fontSize: 12, color: '#888' },
   productCard: {
     backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 12,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, elevation: 2,
+    elevation: 2,
   },
   productCardWarn: { borderLeftWidth: 3, borderLeftColor: '#E65100' },
   productHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute', bottom: 20, right: 16, left: 16,
     backgroundColor: '#2E7D32', borderRadius: 12, paddingVertical: 14,
-    alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, elevation: 5,
+    alignItems: 'center', elevation: 5,
   },
   fabText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },

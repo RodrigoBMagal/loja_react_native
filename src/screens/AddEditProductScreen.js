@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row', padding: 16, gap: 10, backgroundColor: '#fff',
     borderTopWidth: 1, borderTopColor: '#EEE',
-    shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.05, elevation: 3,
+    elevation: 3,
   },
   cancelBtn: {
     flex: 1, height: 50, borderRadius: 10, borderWidth: 1.5,
