@@ -14,11 +14,13 @@ const StatCard = ({ icon, label, value, color, onPress }) => (
 );
 
 const HomeScreen = ({ navigation, route }) => {
-  const { products, getLowStockProducts, getStats, loading, reload } = useStock();
+  const { products, getLowStockProducts, getStats, getExpiryAlerts, loading, reload } = useStock();
   const [refreshing, setRefreshing] = React.useState(false);
   const user = route?.params?.user || { username: 'Usuário', role: 'Funcionário' };
   const stats = getStats();
   const lowStock = getLowStockProducts();
+  const expiryAlerts = getExpiryAlerts();
+  const expiryCount = expiryAlerts.expired.length + expiryAlerts.expiring.length;
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -55,6 +57,25 @@ const HomeScreen = ({ navigation, route }) => {
           <Text style={{ fontSize: 36 }}>🐾</Text>
         </View>
       </View>
+
+      {/* Alerta de validade */}
+      {expiryCount > 0 && (
+        <TouchableOpacity
+          style={[styles.alertBanner, expiryAlerts.expired.length > 0 ? styles.expiredBanner : styles.expiringBanner]}
+          onPress={() => navigation.navigate('Products')}
+        >
+          <Text style={styles.alertIcon}>{expiryAlerts.expired.length > 0 ? '🚨' : '⏳'}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.alertTitle}>
+              {expiryAlerts.expired.length > 0
+                ? `${expiryAlerts.expired.length} produto(s) vencido(s)`
+                : `${expiryAlerts.expiring.length} produto(s) vencem em até 30 dias`}
+            </Text>
+            <Text style={styles.alertSub}>Reveja as datas de validade agora</Text>
+          </View>
+          <Text style={styles.alertArrow}>›</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Alerta de estoque baixo */}
       {lowStock.length > 0 && (
@@ -156,6 +177,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF3E0', borderLeftWidth: 4, borderLeftColor: '#E65100',
     margin: 16, borderRadius: 10, padding: 14,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, elevation: 2,
+  },
+  expiringBanner: {
+    backgroundColor: '#FFF8E1', borderLeftColor: '#F9A825',
+  },
+  expiredBanner: {
+    backgroundColor: '#FFEBEE', borderLeftColor: '#D32F2F',
   },
   alertIcon: { fontSize: 22, marginRight: 10 },
   alertTitle: { fontSize: 14, fontWeight: 'bold', color: '#BF360C' },

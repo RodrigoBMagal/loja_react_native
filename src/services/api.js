@@ -4,11 +4,12 @@ const BASE_URL = 'http://localhost:3000';
 
 const normalizeProduct = (product) => {
     if (!product) return product;
+    const { min_quantity, last_updated, expiry_date, ...rest } = product;
     return {
-        ...product,
-        minQuantity: product.min_quantity,
-        lastUpdated: product.last_updated,
-        expiryDate: product.expiry_date,
+        ...rest,
+        minQuantity: min_quantity,
+        lastUpdated: last_updated,
+        expiryDate: expiry_date,
     };
 };
 
@@ -17,7 +18,7 @@ const normalizeProductList = (products) => {
 };
 
 const denormalizeProduct = (product) => {
-    const { minQuantity, lastUpdated, expiryDate, ...rest } = product;
+    const { minQuantity, lastUpdated, expiryDate, min_quantity, expiry_date, last_updated, ...rest } = product;
     return {
         ...rest,
         min_quantity: minQuantity,
