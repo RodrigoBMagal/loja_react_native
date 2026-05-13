@@ -185,7 +185,7 @@ const ProductsScreen = ({ navigation }) => {
       </View>
 
       {/* Categorias */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catScroll} contentContainerStyle={{ paddingHorizontal: 12 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catScroll} contentContainerStyle={{ paddingHorizontal: 8, alignItems: 'center', height: 36 }}>
         {allCategories.map(cat => (
           <TouchableOpacity
             key={cat}
@@ -203,6 +203,7 @@ const ProductsScreen = ({ navigation }) => {
       <Text style={styles.resultCount}>{filtered.length} produto(s) encontrado(s)</Text>
 
       <FlatList
+        style={styles.productList}
         data={filtered}
         keyExtractor={item => item.id}
         renderItem={({ item }) => (
@@ -213,7 +214,7 @@ const ProductsScreen = ({ navigation }) => {
             onUpdateQty={handleUpdateQuantity}
           />
         )}
-        contentContainerStyle={{ padding: 12, paddingBottom: 80 }}
+        contentContainerStyle={{ paddingTop: 0, paddingHorizontal: 8, paddingBottom: 80, flexGrow: 1 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2E7D32']} />}
         ListEmptyComponent={
           <View style={styles.empty}>
@@ -289,22 +290,34 @@ const ProductsScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F4F6F9' },
-  searchBar: { flexDirection: 'row', padding: 12, gap: 8 },
+  searchBar: { flexDirection: 'row', paddingVertical: 4, paddingHorizontal: 8, gap: 8, marginBottom: 4 },
   searchInput: {
     flex: 1, flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#fff', borderRadius: 10, paddingHorizontal: 12,
-    borderWidth: 1, borderColor: '#E0E0E0',
+    backgroundColor: '#fff', borderRadius: 10, paddingHorizontal: 10,
+    borderWidth: 1, borderColor: '#E0E0E0', height: 34,
   },
-  searchIcon: { fontSize: 16, marginRight: 8 },
-  searchText: { flex: 1, height: 44, fontSize: 15, color: '#333' },
-  filterBtn: { width: 44, height: 44, backgroundColor: '#fff', borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#E0E0E0' },
-  filterBtnText: { fontSize: 20 },
-  catScroll: { maxHeight: 48 },
-  catChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: '#fff', marginRight: 8, borderWidth: 1, borderColor: '#E0E0E0' },
+  searchIcon: { fontSize: 16, marginRight: 6 },
+  searchText: { flex: 1, height: 34, fontSize: 14, color: '#333' },
+  filterBtn: { width: 34, height: 34, backgroundColor: '#fff', borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#E0E0E0' },
+  filterBtnText: { fontSize: 16 },
+  catScroll: { paddingVertical: 0, marginBottom: 0, maxHeight: 36, flexShrink: 1 },
+  catChip: {
+    height: 22,
+    paddingHorizontal: 10,
+    paddingVertical: 0,
+    borderRadius: 15,
+    backgroundColor: '#fff',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   catChipActive: { backgroundColor: '#1B5E20', borderColor: '#1B5E20' },
-  catChipText: { fontSize: 13, color: '#555' },
+  catChipText: { fontSize: 11, color: '#555', lineHeight: 14, includeFontPadding: false },
   catChipTextActive: { color: '#fff', fontWeight: '600' },
-  resultCount: { paddingHorizontal: 16, paddingVertical: 6, fontSize: 12, color: '#888' },
+  productList: { flex: 1, marginTop: 0 },
+  resultCount: { paddingHorizontal: 8, paddingVertical: 1, marginBottom: 0, fontSize: 11, color: '#888' },
   productCard: {
     backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 12,
     elevation: 2,
