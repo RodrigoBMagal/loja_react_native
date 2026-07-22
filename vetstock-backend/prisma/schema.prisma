@@ -1,0 +1,41 @@
+// Prisma schema para o VetStock
+// Documentação: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  funcionario
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique @db.VarChar(50)
+  password  String   @db.VarChar(255)
+  role      Role     @default(funcionario)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+model Product {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(150)
+  category    String?   @db.VarChar(80)
+  quantity    Int       @default(0)
+  minQuantity Int       @default(0) @map("min_quantity")
+  unit        String?   @db.VarChar(50)
+  price       Decimal?  @db.Decimal(10, 2)
+  supplier    String?   @db.VarChar(100)
+  expiryDate  DateTime? @map("expiry_date") @db.Date
+  lastUpdated DateTime  @default(now()) @updatedAt @map("last_updated")
+
+  @@map("products")
+}

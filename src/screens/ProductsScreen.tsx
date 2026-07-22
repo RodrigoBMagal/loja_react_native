@@ -1,0 +1,399 @@
+import React, { useState, useMemo } from 'react';
+import {
+  View, Text, StyleSheet, FlatList, TextInput,
+  TouchableOpacity, RefreshControl, Modal, ScrollView,
+} from 'react-native';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { useStock, CATEGORIES, CATEGORY_COLORS } from '../context/StockContext';
+import { MainTabParamList, Product } from '../types';
+
+type Props = BottomTabScreenProps<MainTabParamList, 'Products'>;
+
+type SortBy = 'name' | 'qty' | 'price';
+
+interface ProductItemProps {
+  product: Product;
+  onEdit: (product: Product) => void;
+  onDelete: (product: Product) => void;
+  onUpdateQty: (id: number, delta: number) => void;
+}
+
+const ProductItem = ({ product, onEdit, onDelete, onUpdateQty }: ProductItemProps) => {
+  const isLow = product.quantity <= product.minQuantity;
+  const isOut = product.quantity === 0;
+  const color = CATEGORY_COLORS[product.category] || '#999';
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return '—';
+    // Parse a data ISO (YYYY-MM-DD) corretamente no timezone local
+    const [y, m, d] = dateStr.split('-');
+    const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+    return date.toLocaleDateString('pt-BR');
+  };
+
+  const statusColor = isOut ? '#C62828' : isLow ? '#E65100' : '#2E7D32';
+  const statusLabel = isOut ? 'SEM ESTOQUE' : isLow ? 'ESTOQUE BAIXO' : 'OK';
+
+  return (
+    <View style={[styles.productCard, isLow && styles.productCardWarn]}>
+      <View style={styles.productHeader}>
+        <View style={[styles.categoryBadge, { backgroundColor: color + '22' }]}>
+          <View style={[styles.categoryDot, { backgroundColor: color }]} />
+          <Text style={[styles.categoryText, { color }]}>{product.category}</Text>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: statusColor + '22' }]}>
+          <Text style={[styles.statusText, { color: statusColor }]}>{statusLabel}</Text>
+        </View>
+      </View>
+
+      <Text style={styles.productName}>{product.name}</Text>
+      <Text style={styles.productSupplier}>Fornecedor: {product.supplier}</Text>
+
+      <View style={styles.productDetails}>
+        <View style={styles.detailItem}>
+          <Text style={styles.detailLabel}>Qtd. Atual</Text>
+          <Text style={[styles.detailValue, { color: statusColor }]}>
+            {product.quantity} {product.unit}
+          </Text>
+        </View>
+        <View style={styles.detailItem}>
+          <Text style={styles.detailLabel}>Qtd. Mínima</Text>
+          <Text style={styles.detailValue}>{product.minQuantity} {product.unit}</Text>
+        </View>
+        <View style={styles.detailItem}>
+          <Text style={styles.detailLabel}>Preço Unit.</Text>
+          <Text style={styles.detailValue}>
+            R$ {Number(product.price).toFixed(2)}
+          </Text>
+        </View>
+        <View style={styles.detailItem}>
+          <Text style={styles.detailLabel}>Validade</Text>
+          <Text style={styles.detailValue}>{formatDate(product.expiryDate)}</Text>
+        </View>
+      </View>
+
+      {/* Controle de Quantidade */}
+      <View style={styles.qtyControl}>
+        <Text style={styles.qtyLabel}>Atualizar quantidade:</Text>
+        <View style={styles.qtyButtons}>
+          <TouchableOpacity style={[styles.qtyBtn, styles.qtyMinus]} onPress={() => onUpdateQty(product.id, -1)}>
+            <Text style={styles.qtyBtnText}>−</Text>
+          </TouchableOpacity>
+          <Text style={styles.qtyDisplay}>{product.quantity}</Text>
+          <TouchableOpacity style={[styles.qtyBtn, styles.qtyPlus]} onPress={() => onUpdateQty(product.id, 1)}>
+            <Text style={styles.qtyBtnText}>+</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.qtyBtn, styles.qtyAdd5]} onPress={() => onUpdateQty(product.id, 5)}>
+            <Text style={styles.qtySmall}>+5</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.qtyBtn, styles.qtyAdd10]} onPress={() => onUpdateQty(product.id, 10)}>
+            <Text style={styles.qtySmall}>+10</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.productActions}>
+        <Text style={styles.lastUpdated}>
+          Atualizado: {new Date(product.lastUpdated).toLocaleDateString('pt-BR')}
+        </Text>
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={styles.editBtn}
+            onPress={() => onEdit(product)}
+            activeOpacity={0.6}
+          >
+            <Text style={styles.editBtnText}>✏️ Editar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.deleteBtn}
+            onPress={() => onDelete(product)}
+            activeOpacity={0.6}
+          >
+            <Text style={styles.deleteBtnText}>🗑️</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const ProductsScreen = ({ navigation }: Props) => {
+  const { products, deleteProduct, updateQuantity: updateQtyApi, reload } = useStock();
+  const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('Todas');
+  const [refreshing, setRefreshing] = useState(false);
+  const [sortBy, setSortBy] = useState<SortBy>('name');
+  const [showFilter, setShowFilter] = useState(false);
+  const [deleteModal, setDeleteModal] = useState<{ visible: boolean; product: Product | null }>({
+    visible: false,
+    product: null,
+  });
+
+  const handleUpdateQuantity = async (id: number, delta: number) => {
+    try {
+      await updateQtyApi(id, delta);
+    } catch (err) {
+      // Erro já foi tratado pelo contexto
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await reload();
+    setRefreshing(false);
+  };
+
+  const filtered = useMemo(() => {
+    let list = [...products];
+    if (selectedCategory !== 'Todas') list = list.filter((p) => p.category === selectedCategory);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter((p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.supplier.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q)
+      );
+    }
+    list.sort((a, b) => {
+      if (sortBy === 'name') return a.name.localeCompare(b.name);
+      if (sortBy === 'qty') return Number(a.quantity) - Number(b.quantity);
+      if (sortBy === 'price') return Number(a.price) - Number(b.price);
+      return 0;
+    });
+    return list;
+  }, [products, search, selectedCategory, sortBy]);
+
+  const handleDelete = (product: Product) => {
+    setDeleteModal({ visible: true, product });
+  };
+
+  const handleEdit = (product: Product) => {
+    navigation.getParent()?.navigate('AddEditProduct', { product, mode: 'edit' });
+  };
+
+  const allCategories = ['Todas', ...CATEGORIES];
+
+  return (
+    <View style={styles.container}>
+      {/* Barra de busca */}
+      <View style={styles.searchBar}>
+        <View style={styles.searchInput}>
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput
+            style={styles.searchText}
+            placeholder="Buscar produto, fornecedor..."
+            placeholderTextColor="#999"
+            value={search}
+            onChangeText={setSearch}
+          />
+          {search ? (
+            <TouchableOpacity onPress={() => setSearch('')}>
+              <Text style={{ color: '#999', fontSize: 18 }}>✕</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+        <TouchableOpacity style={styles.filterBtn} onPress={() => setShowFilter(true)}>
+          <Text style={styles.filterBtnText}>⚙️</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Categorias */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catScroll} contentContainerStyle={{ paddingHorizontal: 8, alignItems: 'center', height: 36 }}>
+        {allCategories.map(cat => (
+          <TouchableOpacity
+            key={cat}
+            style={[styles.catChip, selectedCategory === cat && styles.catChipActive]}
+            onPress={() => setSelectedCategory(cat)}
+          >
+            <Text style={[styles.catChipText, selectedCategory === cat && styles.catChipTextActive]}>
+              {cat}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* Resultado */}
+      <Text style={styles.resultCount}>{filtered.length} produto(s) encontrado(s)</Text>
+
+      <FlatList
+        style={styles.productList}
+        data={filtered}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={({ item }) => (
+          <ProductItem
+            product={item}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onUpdateQty={handleUpdateQuantity}
+          />
+        )}
+        contentContainerStyle={{ paddingTop: 0, paddingHorizontal: 8, paddingBottom: 80, flexGrow: 1 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2E7D32']} />}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={styles.emptyIcon}>📭</Text>
+            <Text style={styles.emptyText}>Nenhum produto encontrado</Text>
+          </View>
+        }
+      />
+
+      {/* FAB */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.getParent()?.navigate('AddEditProduct', { mode: 'add' })}
+      >
+        <Text style={styles.fabText}>+ Novo Produto</Text>
+      </TouchableOpacity>
+
+      {/* Modal de Filtro/Ordenação */}
+      <Modal visible={showFilter} transparent animationType="slide" onRequestClose={() => setShowFilter(false)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowFilter(false)}>
+          <View style={styles.filterModal}>
+            <Text style={styles.filterTitle}>Ordenar por</Text>
+            {([
+              { key: 'name', label: '🔤 Nome (A-Z)' },
+              { key: 'qty', label: '📦 Quantidade (menor primeiro)' },
+              { key: 'price', label: '💰 Preço (menor primeiro)' },
+            ] as { key: SortBy; label: string }[]).map(opt => (
+              <TouchableOpacity
+                key={opt.key}
+                style={[styles.filterOpt, sortBy === opt.key && styles.filterOptActive]}
+                onPress={() => { setSortBy(opt.key); setShowFilter(false); }}
+              >
+                <Text style={[styles.filterOptText, sortBy === opt.key && styles.filterOptTextActive]}>
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Modal de Confirmação de Exclusão */}
+      <Modal visible={deleteModal.visible} transparent animationType="fade" onRequestClose={() => setDeleteModal({ visible: false, product: null })}>
+        <View style={styles.deleteModalOverlay}>
+          <View style={styles.deleteModalContainer}>
+            <Text style={styles.deleteModalTitle}>Confirmar exclusão</Text>
+            <Text style={styles.deleteModalMessage}>
+              Deseja remover "{deleteModal.product?.name}" do estoque?
+            </Text>
+            <View style={styles.deleteModalButtons}>
+              <TouchableOpacity
+                style={[styles.deleteModalBtn, styles.deleteModalBtnCancel]}
+                onPress={() => setDeleteModal({ visible: false, product: null })}
+              >
+                <Text style={styles.deleteModalBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.deleteModalBtn, styles.deleteModalBtnConfirm]}
+                onPress={() => {
+                  if (deleteModal.product) {
+                    deleteProduct(deleteModal.product.id);
+                  }
+                  setDeleteModal({ visible: false, product: null });
+                }}
+              >
+                <Text style={styles.deleteModalBtnTextConfirm}>Remover</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#F4F6F9' },
+  searchBar: { flexDirection: 'row', paddingVertical: 4, paddingHorizontal: 8, gap: 8, marginBottom: 4 },
+  searchInput: {
+    flex: 1, flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#fff', borderRadius: 10, paddingHorizontal: 10,
+    borderWidth: 1, borderColor: '#E0E0E0', height: 34,
+  },
+  searchIcon: { fontSize: 16, marginRight: 6 },
+  searchText: { flex: 1, height: 34, fontSize: 14, color: '#333' },
+  filterBtn: { width: 34, height: 34, backgroundColor: '#fff', borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#E0E0E0' },
+  filterBtnText: { fontSize: 16 },
+  catScroll: { paddingVertical: 0, marginBottom: 0, maxHeight: 36, flexShrink: 1 },
+  catChip: {
+    height: 22,
+    paddingHorizontal: 10,
+    paddingVertical: 0,
+    borderRadius: 15,
+    backgroundColor: '#fff',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  catChipActive: { backgroundColor: '#1B5E20', borderColor: '#1B5E20' },
+  catChipText: { fontSize: 11, color: '#555', lineHeight: 14, includeFontPadding: false },
+  catChipTextActive: { color: '#fff', fontWeight: '600' },
+  productList: { flex: 1, marginTop: 0 },
+  resultCount: { paddingHorizontal: 8, paddingVertical: 1, marginBottom: 0, fontSize: 11, color: '#888' },
+  productCard: {
+    backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 12,
+    elevation: 2,
+  },
+  productCardWarn: { borderLeftWidth: 3, borderLeftColor: '#E65100' },
+  productHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  categoryBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  categoryDot: { width: 6, height: 6, borderRadius: 3, marginRight: 5 },
+  categoryText: { fontSize: 11, fontWeight: '600' },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  statusText: { fontSize: 10, fontWeight: 'bold' },
+  productName: { fontSize: 16, fontWeight: 'bold', color: '#222' },
+  productSupplier: { fontSize: 12, color: '#888', marginBottom: 10 },
+  productDetails: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  detailItem: { flex: 1, minWidth: '40%', backgroundColor: '#F8F9FA', borderRadius: 8, padding: 8 },
+  detailLabel: { fontSize: 11, color: '#999', marginBottom: 2 },
+  detailValue: { fontSize: 14, fontWeight: '600', color: '#333' },
+  qtyControl: { marginBottom: 10 },
+  qtyLabel: { fontSize: 12, color: '#666', marginBottom: 6 },
+  qtyButtons: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  qtyBtn: { width: 34, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  qtyMinus: { backgroundColor: '#FFEBEE' },
+  qtyPlus: { backgroundColor: '#E8F5E9' },
+  qtyAdd5: { backgroundColor: '#E3F2FD', width: 38 },
+  qtyAdd10: { backgroundColor: '#E3F2FD', width: 42 },
+  qtyBtnText: { fontSize: 18, fontWeight: 'bold', color: '#333' },
+  qtySmall: { fontSize: 12, fontWeight: 'bold', color: '#1565C0' },
+  qtyDisplay: { fontSize: 18, fontWeight: 'bold', color: '#333', minWidth: 36, textAlign: 'center' },
+  productActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#F0F0F0', paddingTop: 10 },
+  lastUpdated: { fontSize: 11, color: '#bbb' },
+  actionButtons: { flexDirection: 'row', gap: 8 },
+  editBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E3F2FD', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  editBtnText: { color: '#1565C0', fontWeight: '600', fontSize: 13 },
+  deleteBtn: { backgroundColor: '#FFEBEE', width: 34, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  deleteBtnText: { fontSize: 16 },
+  empty: { alignItems: 'center', paddingTop: 60 },
+  emptyIcon: { fontSize: 48, marginBottom: 12 },
+  emptyText: { fontSize: 16, color: '#999' },
+  fab: {
+    position: 'absolute', bottom: 20, right: 16, left: 16,
+    backgroundColor: '#2E7D32', borderRadius: 12, paddingVertical: 14,
+    alignItems: 'center', elevation: 5,
+  },
+  fabText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  filterModal: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24 },
+  filterTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 16 },
+  filterOpt: { padding: 14, borderRadius: 10, marginBottom: 8, backgroundColor: '#F5F5F5' },
+  filterOptActive: { backgroundColor: '#E8F5E9' },
+  filterOptText: { fontSize: 15, color: '#555' },
+  filterOptTextActive: { color: '#2E7D32', fontWeight: '600' },
+  deleteModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  deleteModalContainer: { backgroundColor: '#fff', borderRadius: 16, padding: 24, width: '80%', maxWidth: 400 },
+  deleteModalTitle: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 12 },
+  deleteModalMessage: { fontSize: 14, color: '#666', marginBottom: 24, lineHeight: 20 },
+  deleteModalButtons: { flexDirection: 'row', gap: 12, justifyContent: 'flex-end' },
+  deleteModalBtn: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, minWidth: 100, alignItems: 'center' },
+  deleteModalBtnCancel: { backgroundColor: '#E0E0E0' },
+  deleteModalBtnConfirm: { backgroundColor: '#C62828' },
+  deleteModalBtnText: { fontSize: 14, fontWeight: '600', color: '#333' },
+  deleteModalBtnTextConfirm: { fontSize: 14, fontWeight: '600', color: '#fff' },
+});
+
+export default ProductsScreen;

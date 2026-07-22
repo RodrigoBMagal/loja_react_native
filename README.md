@@ -1,141 +1,132 @@
-# VetStock - Gerenciador de Estoque para Clínica Veterinária
+# VetStock - Gerenciador de Estoque para Clinica Veterinaria
 
-Aplicativo React Native com backend Node.js + PostgreSQL para gerenciar estoque de produtos.
+Aplicativo React Native (Expo + TypeScript) com backend Express + TypeScript + Prisma (PostgreSQL) para gerenciar estoque de produtos.
 
-## 📋 Pré-requisitos
+## Stack
 
-- Node.js (v16+)
-- PostgreSQL (v12+)
-- npm ou yarn
+- App: React Native (Expo), TypeScript, React Navigation
+- Backend: Node.js, Express, TypeScript, Prisma ORM, Zod (validacao), Swagger (documentacao)
+- Banco de dados: PostgreSQL
+- Infra: Docker Compose, CI com GitHub Actions
 
-## 🚀 Instalação
+## Rodando com Docker Compose (recomendado)
 
-### 1. Configurar Banco de Dados
+Sobe o banco de dados PostgreSQL e o backend automaticamente (aplica as migrations do Prisma no primeiro start).
 
 ```bash
-# Criar banco de dados PostgreSQL
+cp .env.example .env   # ajuste os valores se quiser
+docker compose up --build
+```
+
+- API: http://localhost:3000
+- Documentacao Swagger: http://localhost:3000/docs
+- Healthcheck: http://localhost:3000/health
+
+Para popular o banco com usuarios/produtos de teste:
+
+```bash
+docker compose exec backend npm run seed
+```
+
+Depois, rode o app React Native normalmente (veja abaixo) - ele consome a API em `http://localhost:3000`.
+
+## Rodando sem Docker
+
+### 1. Banco de dados
+
+```bash
 psql -U postgres
 CREATE DATABASE vetstock;
 \q
 ```
 
-### 2. Configurar Backend
+### 2. Backend
 
 ```bash
 cd vetstock-backend
-
-# Copiar arquivo de configuração
 cp .env.example .env
+# Atualize DATABASE_URL, JWT_SECRET, etc.
 
-# Atualizar .env com suas credenciais PostgreSQL
-# DATABASE_URL=postgresql://seu_usuario:sua_senha@localhost:5432/vetstock
-# JWT_SECRET=sua_chave_secreta_aleatoria
-
-# Instalar dependências
 npm install
+npx prisma migrate deploy   # cria as tabelas
+npm run seed                # (opcional) dados de teste
+npm run dev                 # desenvolvimento (tsx watch)
+# ou
+npm run build && npm start  # producao
 ```
 
-### 3. Configurar Frontend
+A documentacao interativa da API fica em `http://localhost:3000/docs` (Swagger UI).
+
+### 3. App (React Native / Expo)
 
 ```bash
 cd ..
-
-# Instalar dependências
 npm install
-```
-
-### 4. Ajustar URL da API (se necessário)
-
-Editar `src/services/api.js` e atualizar a variável `BASE_URL` com o IP do seu backend:
-
-```javascript
-const BASE_URL = 'http://seu_ip_local:3000';
-```
-
-## ▶️ Executar
-
-### Backend (em um terminal)
-
-```bash
-cd vetstock-backend
-npm start      # Produção
-# ou
-npm run dev    # Desenvolvimento com nodemon
-```
-
-### Frontend (em outro terminal)
-
-```bash
+npm run typecheck   # checagem de tipos TypeScript
 npm start
 ```
 
-Opções para o frontend:
-- `npm start` - Expo web
-- `npm run android` - Android
-- `npm run ios` - iOS
-- `npm run web` - Web
+Opcoes: `npm start` (Expo Dev Tools), `npm run android`, `npm run ios`, `npm run web`.
 
-## 📁 Estrutura do Projeto
+Se o backend estiver em outra maquina, atualize `BASE_URL` em `src/services/api.ts`.
+
+## Estrutura do Projeto
 
 ```
 .
-├── App.js                      # Configuração principal de navegação
-├── PrimTela.js                 # Tela inicial
+├── App.tsx                          # Configuracao principal de navegacao
 ├── src/
-│   ├── context/
-│   │   └── StockContext.js     # Context global do estoque
-│   ├── screens/
-│   │   ├── LoginScreen.js
-│   │   ├── HomeScreen.js
-│   │   ├── ProductsScreen.js
-│   │   ├── LowStockScreen.js
-│   │   └── AddEditProductScreen.js
-│   └── services/
-│       └── api.js              # Cliente HTTP
+│   ├── context/StockContext.tsx     # Context global do estoque
+│   ├── screens/                     # Telas (TypeScript)
+│   ├── services/api.ts              # Cliente HTTP
+│   └── types/                       # Tipos compartilhados (models, navegacao)
+├── docker-compose.yml
 └── vetstock-backend/
-    ├── server.js               # Servidor Express
     ├── src/
-    │   ├── db.js               # Conexão PostgreSQL
-    │   ├── middleware/
-    │   │   └── auth.js         # JWT authentication
-    │   └── routes/
-    │       ├── auth.js         # Endpoints de autenticação
-    │       └── products.js     # Endpoints de produtos
-    └── .env                    # Variáveis de ambiente
+    │   ├── app.ts / server.ts       # App Express + bootstrap
+    │   ├── docs/swagger.ts          # Configuracao OpenAPI/Swagger
+    │   ├── lib/prisma.ts            # Cliente Prisma
+    │   ├── middleware/              # auth (JWT) e validate (Zod)
+    │   ├── routes/                  # auth.ts, products.ts
+    │   └── schemas/                 # Schemas Zod de entrada
+    ├── prisma/
+    │   ├── schema.prisma            # Modelos User e Product
+    │   ├── migrations/              # Migrations SQL versionadas
+    │   └── seed.ts
+    └── Dockerfile
 ```
 
-## 🔑 Endpoints da API
+## Endpoints da API
 
-### Autenticação
+### Autenticacao
 - `POST /auth/login` - Login com username/password
 
-### Produtos
+### Produtos (requerem `Authorization: Bearer <token>`)
 - `GET /products` - Listar todos
 - `POST /products` - Criar novo
 - `PUT /products/:id` - Atualizar
-- `PATCH /products/:id/quantity` - Atualizar quantidade
+- `PATCH /products/:id/quantity` - Ajustar quantidade (`{ delta }`)
 - `DELETE /products/:id` - Deletar
 
-## ✅ Checklist de Inicialização
+Todos os endpoints, schemas de request/response e codigos de erro estao documentados em `/docs` (Swagger UI) quando o backend esta rodando.
 
-- [ ] PostgreSQL instalado e rodando
-- [ ] Banco `vetstock` criado
-- [ ] `npm install` executado (frontend e backend)
-- [ ] `.env` do backend configurado
-- [ ] Backend iniciado (`npm start`)
-- [ ] Frontend iniciado (`npm start`)
+## CI
 
-## 🐛 Troubleshooting
+O workflow `.github/workflows/ci.yml` roda em toda `push`/`pull_request` para `master`/`main`:
+- **backend**: instala dependencias, gera o Prisma Client, faz type-check (`tsc --noEmit`), build (`tsc`) e aplica as migrations contra um Postgres de servico.
+- **frontend**: instala dependencias e faz type-check do app React Native.
 
-**Erro de conexão ao banco de dados**
-- Verificar se PostgreSQL está rodando
-- Validar credenciais em `.env`
-- Confirmar que o banco `vetstock` existe
+## Troubleshooting
 
-**Erro "Cannot connect to server"**
-- Verificar se backend está rodando
-- Atualizar IP em `src/services/api.js`
+**Erro de conexao ao banco de dados**
+- Verificar se PostgreSQL esta rodando (ou `docker compose ps`)
+- Validar `DATABASE_URL` em `.env`
+- Rodar `npx prisma migrate deploy` (fora do Docker) para garantir que as tabelas existem
 
-**Porta 3000 já em uso**
-- Mudar PORT em `.env` para outra porta
+**Erro "Cannot connect to server" no app**
+- Verificar se o backend esta rodando (`GET /health`)
+- Atualizar `BASE_URL` em `src/services/api.ts`
+
+**Porta 3000 ja em uso**
+- Mudar `PORT`/`BACKEND_PORT` no `.env`
 - Ou: `lsof -ti:3000 | xargs kill -9` (Linux/Mac) ou `netstat -ano | findstr :3000` (Windows)
