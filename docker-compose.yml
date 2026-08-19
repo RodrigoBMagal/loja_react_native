@@ -30,7 +30,7 @@ services:
         condition: service_healthy
     environment:
       PORT: 3000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-vetstock}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-vetstock}
       JWT_SECRET: ${JWT_SECRET:-troque_esta_chave_em_producao}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
     ports:

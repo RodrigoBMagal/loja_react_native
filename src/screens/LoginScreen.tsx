@@ -7,12 +7,13 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { StackScreenProps } from '@react-navigation/stack';
 import { authApi } from '../services/api';
+import { useStock } from '../context/StockContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../types';
 
+
 // Usuários são autenticados contra o backend
 // Credenciais padrão: admin/123456 ou funcionario/123456
-
 type Props = StackScreenProps<RootStackParamList, 'Login'>;
 
 const LoginScreen = ({ navigation }: Props) => {
@@ -20,6 +21,7 @@ const LoginScreen = ({ navigation }: Props) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const { reload } = useStock();
 
   const handleLogin = async () => {
     if (!username.trim() || !password.trim()) {
@@ -36,6 +38,9 @@ const LoginScreen = ({ navigation }: Props) => {
       // Salva o token para uso nas próximas requisições
       await AsyncStorage.setItem('@vetstock_token', token);
       await AsyncStorage.setItem('@vetstock_user', JSON.stringify(user));
+
+      // Carrega os produtos agora que temos token
+      await reload();
 
       navigation.replace('Main', { user });
     } catch (err) {
