@@ -2,7 +2,6 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "baseUrl": ".",
     "noUnusedLocals": false,
     "noUnusedParameters": false
   },
@@ -13,6 +12,5 @@
   "exclude": [
     "node_modules",
     "vetstock-backend"
-  ],
-  "extends": "expo/tsconfig.base"
+  ]
 }
