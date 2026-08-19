@@ -3,7 +3,17 @@
   "compilerOptions": {
     "strict": true,
     "noUnusedLocals": false,
-    "noUnusedParameters": false
+    "noUnusedParameters": false,
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@/design/*": ["src/design/*"],
+      "@/components/*": ["src/components/*"],
+      "@/screens/*": ["src/screens/*"],
+      "@/context/*": ["src/context/*"],
+      "@/types/*": ["src/types/*"]
+    }
   },
   "include": [
     "**/*.ts",
