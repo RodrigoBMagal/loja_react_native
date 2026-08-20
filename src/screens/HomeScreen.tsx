@@ -1,32 +1,42 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, RefreshControl,
+  View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleProp, ViewStyle, TextStyle,
 } from 'react-native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { useStock, CATEGORY_COLORS } from '../context/StockContext';
 import { MainTabParamList, Product } from '../types';
+import { Button, Card, Badge } from '@/components/ui';
+import { colors, spacing, typography, borderRadius, getElevation } from '@/design/tokens';
 
 type Props = BottomTabScreenProps<MainTabParamList, 'Home'>;
 
 interface StatCardProps {
   icon: string;
   label: string;
-  value: number;
+  value: string | number;
   color: string;
   onPress?: () => void;
 }
 
 const StatCard = ({ icon, label, value, color, onPress }: StatCardProps) => (
-  <TouchableOpacity style={[styles.statCard, { borderLeftColor: color }]} onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
-    <Text style={styles.statIcon}>{icon}</Text>
-    <Text style={[styles.statValue, { color }]}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
-  </TouchableOpacity>
+  <Button
+    variant="ghost"
+    fullWidth
+    onPress={onPress}
+    style={[styles.statCard, { borderLeftColor: color }] as StyleProp<ViewStyle>[]}
+  >
+    <View style={styles.statRow}>
+      <Text style={styles.statIcon}>{icon}</Text>
+      <View style={styles.statTextContainer}>
+        <Text style={[styles.statValue, { color }] as TextStyle[]}>{value}</Text>
+        <Text style={styles.statLabel}>{label}</Text>
+      </View>
+    </View>
+  </Button>
 );
 
 const HomeScreen = ({ navigation, route }: Props) => {
-  const { products, getLowStockProducts, getStats, getExpiryAlerts, reload } = useStock();
+const { products, getLowStockProducts, getStats, getExpiryAlerts, reload } = useStock();
   const [refreshing, setRefreshing] = useState(false);
   const user = route?.params?.user || { username: 'Usuário', role: 'Funcionário' };
   const stats = getStats();
@@ -48,6 +58,8 @@ const HomeScreen = ({ navigation, route }: Props) => {
     return d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
   };
 
+  const totalQuantity = products.reduce((acc, p) => acc + p.quantity, 0);
+
   const categoryCount: Record<string, number> = {};
   products.forEach((p: Product) => {
     categoryCount[p.category] = (categoryCount[p.category] || 0) + 1;
@@ -56,7 +68,8 @@ const HomeScreen = ({ navigation, route }: Props) => {
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2E7D32']} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.brand[600]]} />}
+      contentContainerStyle={styles.contentContainer}
     >
       {/* Header */}
       <View style={styles.header}>
@@ -72,10 +85,7 @@ const HomeScreen = ({ navigation, route }: Props) => {
 
       {/* Alerta de validade */}
       {expiryCount > 0 && (
-        <TouchableOpacity
-          style={[styles.alertBanner, expiryAlerts.expired.length > 0 ? styles.expiredBanner : styles.expiringBanner]}
-          onPress={() => navigation.navigate('Products')}
-        >
+        <View style={[styles.alertBanner, expiryAlerts.expired.length > 0 ? styles.expiredBanner : styles.expiringBanner]}>
           <Text style={styles.alertIcon}>{expiryAlerts.expired.length > 0 ? '🚨' : '⏳'}</Text>
           <View style={{ flex: 1 }}>
             <Text style={styles.alertTitle}>
@@ -86,87 +96,140 @@ const HomeScreen = ({ navigation, route }: Props) => {
             <Text style={styles.alertSub}>Reveja as datas de validade agora</Text>
           </View>
           <Text style={styles.alertArrow}>›</Text>
-        </TouchableOpacity>
+        </View>
       )}
 
       {/* Alerta de estoque baixo */}
       {lowStock.length > 0 && (
-        <TouchableOpacity
-          style={styles.alertBanner}
-          onPress={() => navigation.navigate('LowStock')}
-        >
+        <View style={styles.lowStockBanner}>
           <Text style={styles.alertIcon}>⚠️</Text>
           <View style={{ flex: 1 }}>
-            <Text style={styles.alertTitle}>{lowStock.length} produto(s) com estoque baixo!</Text>
-            <Text style={styles.alertSub}>Toque para visualizar</Text>
+            <Text style={styles.alertTitle}>{lowStock.length} produto(s) com estoque baixo</Text>
+            <Text style={styles.alertSub}>Repor estoque para evitar rupturas</Text>
           </View>
-          <Text style={styles.alertArrow}>›</Text>
-        </TouchableOpacity>
+          <Button
+            variant="ghost"
+            size="sm"
+            onPress={() => navigation.navigate('LowStock')}
+            style={styles.bannerButton}
+          >
+            Ver
+          </Button>
+        </View>
       )}
 
       {/* Cards de estatísticas */}
-      <Text style={styles.sectionTitle}>Resumo do Estoque</Text>
       <View style={styles.statsGrid}>
-        <StatCard icon="📦" label="Total de Produtos" value={stats.total} color="#1565C0" onPress={() => navigation.navigate('Products')} />
-        <StatCard icon="⚠️" label="Estoque Baixo" value={stats.lowStock} color="#E65100"
-          onPress={() => navigation.navigate('LowStock')} />
-        <StatCard icon="❌" label="Sem Estoque" value={stats.outOfStock} color="#C62828" />
-        <StatCard icon="🏷️" label="Categorias" value={stats.categories} color="#2E7D32" />
+        <StatCard
+          icon="📦"
+          label="Total de Produtos"
+          value={stats.total}
+          color={colors.category.medicamentos}
+        />
+        <StatCard
+          icon="💊"
+          label="Itens Únicos"
+          value={totalQuantity}
+          color={colors.category.vacinas}
+        />
+        <StatCard
+          icon="⚠️"
+          label="Estoque Baixo"
+          value={stats.lowStock}
+          color={colors.semantic.warning}
+        />
+        <StatCard
+          icon="💰"
+          label="Valor Total"
+          value={formatCurrency(stats.totalValue)}
+          color={colors.category.suplementos}
+        />
       </View>
 
-      <View style={styles.valueCard}>
-        <Text style={styles.valueLabel}>💰 Valor Total em Estoque</Text>
-        <Text style={styles.valueAmount}>{formatCurrency(stats.totalValue)}</Text>
-      </View>
-
-      {/* Produtos com estoque crítico */}
-      {lowStock.length > 0 && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🔴 Estoque Crítico</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('LowStock')}>
-              <Text style={styles.seeAll}>Ver todos</Text>
-            </TouchableOpacity>
+      {/* Valor total do estoque */}
+      <Card variant="default" style={styles.valueCard}>
+        <View style={styles.valueRow}>
+          <View>
+            <Text style={styles.valueLabel}>Valor Total do Estoque</Text>
+            <Text style={styles.valueAmount}>{formatCurrency(stats.totalValue)}</Text>
           </View>
-          {lowStock.slice(0, 4).map((p) => (
-            <TouchableOpacity
-              key={p.id}
-              style={styles.criticalItem}
-              onPress={() => navigation.getParent()?.navigate('AddEditProduct', { product: p, mode: 'edit' })}
-            >
-              <View style={[styles.categoryDot, { backgroundColor: CATEGORY_COLORS[p.category] || '#999' }]} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.criticalName}>{p.name}</Text>
-                <Text style={styles.criticalCategory}>{p.category}</Text>
+          <Badge variant="category" category="vacinas" size="default">
+            Maior categoria
+          </Badge>
+        </View>
+      </Card>
+
+      {/* Produtos críticos */}
+      {(lowStock.length > 0 || products.some(p => p.quantity === 0)) && (
+        <View>
+          <Text style={styles.sectionTitle}>Produtos Críticos</Text>
+          <Card variant="default" style={styles.criticalCard}>
+            {(lowStock.length > 0 || products.some(p => p.quantity === 0)) ? (
+              products
+                .filter(p => p.quantity <= p.minQuantity)
+                .slice(0, 5)
+                .map((product) => (
+                  <TouchableOpacity
+                    key={product.id}
+                    style={styles.criticalItem}
+                    onPress={() => navigation.navigate('Products')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.categoryDot, { backgroundColor: CATEGORY_COLORS[product.category] || '#999' }]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.criticalName}>{product.name}</Text>
+                      <Text style={styles.criticalCategory}>
+                        {product.category} · {product.supplier}
+                      </Text>
+                    </View>
+                    <View style={styles.criticalQty}>
+                      <Text
+                        style={[
+                          styles.criticalQtyText,
+                          product.quantity === 0 ? styles.outOfStockText : {},
+                        ] as TextStyle[]}
+                      >
+                        {product.quantity} {product.unit}
+                      </Text>
+                      <Text style={styles.criticalUnit}>Mín: {product.minQuantity}</Text>
+                    </View>
+                    <Text style={styles.criticalArrow}>›</Text>
+                  </TouchableOpacity>
+                ))
+            ) : (
+              <View style={styles.allGood}>
+                <Text style={styles.allGoodIcon}>✅</Text>
+                <Text style={styles.allGoodTitle}>Tudo em dia!</Text>
+                <Text style={styles.allGoodSub}>Todos os produtos têm estoque acima do mínimo</Text>
               </View>
-              <View style={styles.criticalQty}>
-                <Text style={[styles.criticalQtyText, p.quantity === 0 && styles.outOfStockText]}>
-                  {p.quantity} / {p.minQuantity}
-                </Text>
-                <Text style={styles.criticalUnit}>{p.unit}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+            )}
+          </Card>
         </View>
       )}
 
       {/* Distribuição por categoria */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📊 Por Categoria</Text>
-        {Object.entries(categoryCount).map(([cat, count]) => (
-          <View key={cat} style={styles.categoryRow}>
-            <View style={[styles.categoryBar, { backgroundColor: CATEGORY_COLORS[cat] || '#999' }]}>
-              <View
-                style={[styles.categoryFill, {
-                  width: `${(count / stats.total) * 100}%`,
-                  backgroundColor: CATEGORY_COLORS[cat] || '#999',
-                }]}
-              />
-            </View>
-            <Text style={styles.categoryLabel}>{cat}</Text>
-            <Text style={styles.categoryCount}>{count}</Text>
-          </View>
-        ))}
+        <Text style={styles.sectionTitle}>Distribuição por Categoria</Text>
+        <Card variant="default" style={styles.categoryCard}>
+          {Object.entries(categoryCount).map(([cat, count]) => {
+            const catColor = CATEGORY_COLORS[cat] || '#999';
+            const percentage = (count / stats.total) * 100;
+            return (
+              <View key={cat} style={styles.categoryRow}>
+                <View style={styles.categoryBar}>
+                  <View
+                    style={[
+                      styles.categoryFill,
+                      { width: `${percentage}%`, backgroundColor: catColor },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.categoryLabel}>{cat}</Text>
+                <Text style={styles.categoryCount}>{count}</Text>
+              </View>
+            );
+          })}
+        </Card>
       </View>
 
       <View style={{ height: 24 }} />
@@ -174,69 +237,198 @@ const HomeScreen = ({ navigation, route }: Props) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F4F6F9' },
+const styles = {
+  container: { flex: 1, backgroundColor: colors.neutral[100] },
+  contentContainer: { paddingBottom: spacing[6] },
   header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: '#1B5E20', padding: 20, paddingTop: 16, paddingBottom: 24,
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    backgroundColor: colors.brand[700],
+    paddingHorizontal: spacing[5],
+    paddingTop: spacing[4],
+    paddingBottom: spacing[6],
   },
-  greeting: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
-  role: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
-  date: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 4, textTransform: 'capitalize' },
-  headerIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
+  greeting: {
+    fontSize: typography.sizes.headingLg,
+    fontWeight: typography.weights.bold,
+    color: colors.neutral[0],
+  },
+  role: {
+    fontSize: typography.sizes.labelMd,
+    color: 'rgba(255,255,255,0.75)',
+    marginTop: spacing[1],
+  },
+  date: {
+    fontSize: typography.sizes.labelSm,
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: spacing[1],
+    textTransform: 'capitalize' as const,
+  },
+  headerIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: borderRadius.full,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
   alertBanner: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#FFF3E0', borderLeftWidth: 4, borderLeftColor: '#E65100',
-    margin: 16, borderRadius: 10, padding: 14,
-    elevation: 2,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: colors.brand[50],
+    borderLeftWidth: 4,
+    borderLeftColor: colors.semantic.warning,
+    marginHorizontal: spacing[4],
+    marginVertical: spacing[3],
+    borderRadius: borderRadius.md,
+    padding: spacing[4],
+    ...getElevation(1),
   },
   expiringBanner: {
-    backgroundColor: '#FFF8E1', borderLeftColor: '#F9A825',
+    backgroundColor: '#FFF8E1',
+    borderLeftColor: '#F9A825',
   },
   expiredBanner: {
-    backgroundColor: '#FFEBEE', borderLeftColor: '#D32F2F',
+    backgroundColor: '#FFEBEE',
+    borderLeftColor: colors.semantic.danger,
   },
-  alertIcon: { fontSize: 22, marginRight: 10 },
-  alertTitle: { fontSize: 14, fontWeight: 'bold', color: '#BF360C' },
-  alertSub: { fontSize: 12, color: '#E65100', marginTop: 2 },
+  alertIcon: { fontSize: 22, marginRight: spacing[3] },
+  alertTitle: {
+    fontSize: typography.sizes.bodySm,
+    fontWeight: typography.weights.bold,
+    color: '#BF360C',
+  },
+  alertSub: {
+    fontSize: typography.sizes.labelSm,
+    color: '#E65100',
+    marginTop: spacing[1],
+  },
   alertArrow: { fontSize: 24, color: '#E65100' },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 8, marginTop: 4 },
+  lowStockBanner: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: '#FFF3E0',
+    borderLeftWidth: 4,
+    borderLeftColor: colors.semantic.warning,
+    marginHorizontal: spacing[4],
+    marginVertical: spacing[3],
+    borderRadius: borderRadius.md,
+    padding: spacing[4],
+    ...getElevation(1),
+  },
+  bannerButton: {
+    marginLeft: spacing[2],
+  },
+  statsGrid: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    paddingHorizontal: spacing[2],
+    marginTop: spacing[1],
+  },
   statCard: {
-    width: '46%', margin: '2%', backgroundColor: '#fff',
-    borderRadius: 12, padding: 16, borderLeftWidth: 4,
-    elevation: 2,
+    width: '48%' as any,
+    margin: '1%',
+    ...getElevation(1),
   },
-  statIcon: { fontSize: 22, marginBottom: 8 },
-  statValue: { fontSize: 28, fontWeight: 'bold' },
-  statLabel: { fontSize: 12, color: '#888', marginTop: 4 },
+  statRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+  },
+  statIcon: { fontSize: 22, marginRight: spacing[2] },
+  statTextContainer: { flex: 1 },
+  statValue: {
+    fontSize: typography.sizes.headingMd,
+    fontWeight: typography.weights.bold,
+  },
+  statLabel: {
+    fontSize: typography.sizes.labelSm,
+    color: colors.neutral[500],
+    marginTop: spacing[1],
+  },
   valueCard: {
-    backgroundColor: '#1B5E20', marginHorizontal: 16, borderRadius: 12,
-    padding: 18, marginBottom: 8,
-    elevation: 3,
+    backgroundColor: colors.brand[700],
+    marginHorizontal: spacing[4],
+    marginBottom: spacing[2],
+    ...getElevation(2),
   },
-  valueLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 13 },
-  valueAmount: { color: '#fff', fontSize: 28, fontWeight: 'bold', marginTop: 4 },
-  section: { margin: 16, marginTop: 8 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', margin: 16, marginBottom: 8 },
-  seeAll: { color: '#2E7D32', fontWeight: '600', fontSize: 14 },
+  valueRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+  },
+  valueLabel: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: typography.sizes.labelLg,
+  },
+  valueAmount: {
+    color: colors.neutral[0],
+    fontSize: typography.sizes.headingLg,
+    fontWeight: typography.weights.bold,
+    marginTop: spacing[1],
+  },
+  section: { marginHorizontal: spacing[4], marginTop: spacing[2] },
+  sectionTitle: {
+    fontSize: typography.sizes.headingSm,
+    fontWeight: typography.weights.bold,
+    color: colors.neutral[900],
+    marginBottom: spacing[2],
+  },
+  criticalCard: { ...getElevation(1) },
   criticalItem: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff',
-    borderRadius: 10, padding: 12, marginBottom: 8,
-    elevation: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: colors.neutral[0],
+    borderRadius: borderRadius.md,
+    padding: spacing[3],
+    marginBottom: spacing[2],
+    ...getElevation(1),
   },
-  categoryDot: { width: 10, height: 10, borderRadius: 5, marginRight: 12 },
-  criticalName: { fontSize: 14, fontWeight: '600', color: '#333' },
-  criticalCategory: { fontSize: 12, color: '#888', marginTop: 2 },
-  criticalQty: { alignItems: 'flex-end' },
-  criticalQtyText: { fontSize: 14, fontWeight: 'bold', color: '#E65100' },
-  outOfStockText: { color: '#C62828' },
-  criticalUnit: { fontSize: 11, color: '#999', marginTop: 2 },
-  categoryRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, backgroundColor: '#fff', borderRadius: 8, padding: 10 },
-  categoryBar: { height: 6, flex: 1, borderRadius: 3, backgroundColor: '#eee', overflow: 'hidden', marginRight: 10 },
-  categoryFill: { height: '100%', borderRadius: 3 },
-  categoryLabel: { width: 120, fontSize: 13, color: '#555' },
-  categoryCount: { fontSize: 14, fontWeight: 'bold', color: '#333', width: 28, textAlign: 'right' },
-});
+  categoryDot: { width: 10, height: 10, borderRadius: 5, marginRight: spacing[3] },
+  criticalName: {
+    fontSize: typography.sizes.bodyMd,
+    fontWeight: typography.weights.semibold,
+    color: colors.neutral[900],
+  },
+  criticalCategory: {
+    fontSize: typography.sizes.labelMd,
+    color: colors.neutral[500],
+    marginTop: spacing[1],
+  },
+  criticalQty: { alignItems: 'flex-end' as const, marginLeft: spacing[3] },
+  criticalQtyText: {
+    fontSize: typography.sizes.bodyMd,
+    fontWeight: typography.weights.bold,
+    color: colors.semantic.warning,
+  },
+  outOfStockText: { color: colors.semantic.danger },
+  criticalUnit: {
+    fontSize: typography.sizes.labelSm,
+    color: colors.neutral[500],
+    marginTop: spacing[1],
+  },
+  criticalArrow: { fontSize: 24, color: colors.neutral[400], marginLeft: spacing[2] },
+  categoryCard: { ...getElevation(1) },
+  categoryRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginBottom: spacing[3],
+  },
+  categoryBar: {
+    height: 6,
+    flex: 1,
+    borderRadius: 3,
+    backgroundColor: colors.neutral[200],
+    overflow: 'hidden' as const,
+    marginRight: spacing[3],
+  },
+  categoryFill: { height: '100%' as any, borderRadius: 3 },
+  categoryLabel: { width: 120, fontSize: typography.sizes.bodySm, color: colors.neutral[600] },
+  categoryCount: { fontSize: typography.sizes.bodyMd, fontWeight: typography.weights.bold, color: colors.neutral[900], width: 28, textAlign: 'right' as const },
+  allGood: { flex: 1, alignItems: 'center' as const, justifyContent: 'center' as const, paddingVertical: spacing[6] },
+  allGoodIcon: { fontSize: 64, marginBottom: spacing[4] },
+  allGoodTitle: { fontSize: typography.sizes.headingMd, fontWeight: typography.weights.bold, color: colors.brand[600] },
+  allGoodSub: { fontSize: typography.sizes.bodyMd, color: colors.neutral[500], marginTop: spacing[2], textAlign: 'center' as const, paddingHorizontal: spacing[8] },
+};
 
 export default HomeScreen;

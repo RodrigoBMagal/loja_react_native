@@ -2,7 +2,7 @@
 // Uses tokens from @/design/tokens
 
 import React from 'react';
-import { TextInput, Text, View, StyleProp, ViewStyle, TextStyle, Platform } from 'react-native';
+import { TextInput, Text, View, Pressable, StyleProp, ViewStyle, TextStyle, Platform } from 'react-native';
 import { colors, spacing, typography, borderRadius, getElevation } from '@/design/tokens';
 
 export type InputSize = 'default' | 'sm';
@@ -15,6 +15,7 @@ export interface InputProps extends React.ComponentPropsWithoutRef<typeof TextIn
   size?: InputSize;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  onRightIconPress?: () => void;
   fullWidth?: boolean;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -37,6 +38,7 @@ export const Input = React.forwardRef<TextInput, InputProps>(
       size = 'default',
       leftIcon,
       rightIcon,
+      onRightIconPress,
       fullWidth = true,
       style,
       inputStyle,
@@ -105,7 +107,15 @@ export const Input = React.forwardRef<TextInput, InputProps>(
             accessibilityLiveRegion={hasError ? 'assertive' : 'polite'}
             {...props}
           />
-          {rightIcon && <View style={styles.iconRight}>{rightIcon}</View>}
+          {rightIcon && (
+            <Pressable 
+              style={styles.iconRight} 
+              onPress={onRightIconPress}
+              accessibilityLabel="Toggle visibility"
+            >
+              {rightIcon}
+            </Pressable>
+          )}
         </View>
         {(error || helperText) && (
           <Text

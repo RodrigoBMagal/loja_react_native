@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity,
-  StyleSheet, KeyboardAvoidingView, Platform,
-  ActivityIndicator, Alert,
+  View, Text, Platform,
+  ActivityIndicator, Alert, KeyboardAvoidingView,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -10,7 +9,8 @@ import { authApi } from '../services/api';
 import { useStock } from '../context/StockContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../types';
-
+import { Button, Input, Card } from '@/components/ui';
+import { colors, spacing, typography, borderRadius, getElevation } from '@/design/tokens';
 
 // Usuários são autenticados contra o backend
 // Credenciais padrão: admin/123456 ou funcionario/123456
@@ -66,98 +66,93 @@ const LoginScreen = ({ navigation }: Props) => {
         <Text style={styles.subtitle}>Gestão de Estoque Veterinário</Text>
       </View>
 
-      <View style={styles.card}>
+      <Card variant="default" style={styles.card}>
         <Text style={styles.cardTitle}>Entrar</Text>
 
-        <Text style={styles.label}>Usuário</Text>
-        <View style={styles.inputWrapper}>
-          <Text style={styles.inputIcon}>👤</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Digite seu usuário"
-            placeholderTextColor="#999"
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-            returnKeyType="next"
-          />
-        </View>
+        <Input
+          label="Usuário"
+          placeholder="Digite seu usuário"
+          value={username}
+          onChangeText={setUsername}
+          autoCapitalize="none"
+          returnKeyType="next"
+          leftIcon="👤"
+          size="default"
+          style={styles.input}
+        />
 
-        <Text style={styles.label}>Senha</Text>
-        <View style={styles.inputWrapper}>
-          <Text style={styles.inputIcon}>🔒</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Digite sua senha"
-            placeholderTextColor="#999"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPass}
-            returnKeyType="done"
-            onSubmitEditing={handleLogin}
-          />
-          <TouchableOpacity onPress={() => setShowPass(!showPass)} style={styles.eyeBtn}>
-            <Text>{showPass ? '🙈' : '👁️'}</Text>
-          </TouchableOpacity>
-        </View>
+        <Input
+          label="Senha"
+          placeholder="Digite sua senha"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!showPass}
+          returnKeyType="done"
+          onSubmitEditing={handleLogin}
+          leftIcon="🔒"
+          rightIcon={showPass ? '🙈' : '👁️'}
+          onRightIconPress={() => setShowPass(!showPass)}
+          size="default"
+          style={styles.input}
+        />
 
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
+        <Button
+          variant="primary"
+          size="lg"
+          fullWidth
+          loading={loading}
           onPress={handleLogin}
           disabled={loading}
+          style={styles.button}
         >
-          {loading
-            ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.buttonText}>Acessar Sistema</Text>
-          }
-        </TouchableOpacity>
-      </View>
+          Acessar Sistema
+        </Button>
+      </Card>
     </KeyboardAvoidingView>
   );
 };
 
-const styles = StyleSheet.create({
+const styles = {
   container: {
     flex: 1,
-    backgroundColor: '#0084ff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
+    backgroundColor: colors.brand[500],
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingHorizontal: spacing[6],
   },
-  header: { alignItems: 'center', marginBottom: 32 },
+  header: { alignItems: 'center' as const, marginBottom: spacing[8] },
   iconWrapper: {
-    width: 80, height: 80, borderRadius: 40,
+    width: 80, height: 80, borderRadius: borderRadius.full,
     backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+    alignItems: 'center' as const, justifyContent: 'center' as const, marginBottom: spacing[3],
   },
   icon: { fontSize: 40 },
-  appName: { fontSize: 32, fontWeight: 'bold', color: '#fff', letterSpacing: 2 },
-  subtitle: { fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 4 },
+  appName: { 
+    fontSize: typography.sizes.displayLg, 
+    fontWeight: typography.weights.bold, 
+    color: colors.neutral[0], 
+    letterSpacing: 2 
+  },
+  subtitle: { 
+    fontSize: typography.sizes.bodyMd, 
+    color: 'rgba(255,255,255,0.7)', 
+    marginTop: spacing[1] 
+  },
   card: {
-    width: '100%', backgroundColor: '#fff',
-    borderRadius: 16, padding: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15, shadowRadius: 8, elevation: 6,
+    width: '100%' as any,
   },
-  cardTitle: { fontSize: 22, fontWeight: 'bold', color: '#1B5E20', marginBottom: 20 },
-  label: { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 6, marginTop: 12 },
-  inputWrapper: {
-    flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1.5, borderColor: '#E0E0E0',
-    borderRadius: 10, paddingHorizontal: 12,
-    backgroundColor: '#FAFAFA',
+  cardTitle: { 
+    fontSize: typography.sizes.headingLg, 
+    fontWeight: typography.weights.bold, 
+    color: colors.brand[900], 
+    marginBottom: spacing[5] 
   },
-  inputIcon: { fontSize: 16, marginRight: 8 },
-  input: { flex: 1, height: 48, fontSize: 15, color: '#333' },
-  eyeBtn: { padding: 4 },
+  input: {
+    marginBottom: spacing[3],
+  },
   button: {
-    marginTop: 28, backgroundColor: '#0084ff',
-    borderRadius: 10, height: 50,
-    alignItems: 'center', justifyContent: 'center',
+    marginTop: spacing[2],
   },
-  buttonDisabled: { opacity: 0.7 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  hint: { textAlign: 'center', color: '#999', fontSize: 12, marginTop: 16 },
-});
+};
 
 export default LoginScreen;
