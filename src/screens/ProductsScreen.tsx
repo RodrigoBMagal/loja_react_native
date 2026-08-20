@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TextInput,
-  TouchableOpacity, RefreshControl, Modal,
+  TouchableOpacity, RefreshControl, Modal, Alert,
 } from 'react-native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeNavigationProp } from '@react-navigation/native';
@@ -126,6 +126,26 @@ const ProductItem = ({ product, onEdit, onDelete, onUpdateQty }: ProductItemProp
           </Button>
         </View>
       </View>
+
+      {/* Ações do produto */}
+      <View style={styles.productActions}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onPress={() => onEdit(product)}
+          style={styles.actionBtn}
+        >
+          <Text style={styles.actionBtnText}>✏️ Editar</Text>
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onPress={() => onDelete(product)}
+          style={styles.actionBtn}
+        >
+          <Text style={[styles.actionBtnText, { color: colors.semantic.danger }]}>🗑️ Excluir</Text>
+        </Button>
+      </View>
     </Card>
   );
 };
@@ -194,6 +214,8 @@ const ProductsScreen = ({ navigation }: Props) => {
     setRefreshing(false);
   };
 
+  const { updateQuantity, deleteProduct } = useStock();
+
   const handleEdit = (product: Product) => {
     navigation.navigate('AddEditProduct', { mode: 'edit', product });
   };
@@ -203,11 +225,25 @@ const ProductsScreen = ({ navigation }: Props) => {
     setDeleteModalVisible(true);
   };
 
+  const handleUpdateQty = async (id: number, delta: number) => {
+    try {
+      await updateQuantity(id, delta);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      Alert.alert('Erro', 'Não foi possível atualizar a quantidade: ' + message);
+    }
+  };
+
   const confirmDelete = async () => {
     if (productToDelete) {
-      await productsApi.delete(productToDelete.id);
-      setDeleteModalVisible(false);
-      setProductToDelete(null);
+      try {
+        await deleteProduct(productToDelete.id);
+        setDeleteModalVisible(false);
+        setProductToDelete(null);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        Alert.alert('Erro', 'Não foi possível excluir o produto: ' + message);
+      }
     }
   };
 
@@ -263,15 +299,7 @@ const ProductsScreen = ({ navigation }: Props) => {
             product={item}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            onUpdateQty={(id, delta) => {
-              const product = products.find(p => p.id === id);
-              if (product) {
-                const newQty = product.quantity + delta;
-                if (newQty >= 0) {
-                  // updateQuantity is handled by context
-                }
-              }
-            }}
+            onUpdateQty={handleUpdateQty}
           />
         )}
         keyExtractor={item => String(item.id)}
@@ -366,13 +394,13 @@ const ProductsScreen = ({ navigation }: Props) => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface.primary },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing[3], paddingVertical: spacing[2] },
-  searchWrapper: { flex: 1 },
-  searchInput: { marginRight: spacing[2] },
-  headerActions: { flexDirection: 'row', alignItems: 'center' },
+  searchWrapper: { flex: 1, marginRight: spacing[2] },
+  searchInput: { marginBottom: 0 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
   filterBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing[2], paddingVertical: spacing[1], backgroundColor: colors.surface.secondary, borderRadius: borderRadius.full },
   filterBtnText: { color: colors.neutral[900], fontSize: typography.sizes.bodySm, fontWeight: '500' },
-  fab: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.brand[600], justifyContent: 'center', alignItems: 'center', marginLeft: spacing[2] },
-  fabText: { color: '#fff', fontSize: typography.sizes.headingLg, fontWeight: 'bold' },
+  fab: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.brand[600], justifyContent: 'center', alignItems: 'center' },
+  fabText: { color: '#fff', fontSize: typography.sizes.headingLg, fontWeight: 'bold', lineHeight: typography.lineHeights.headingLg, includeFontPadding: false },
   counters: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: spacing[2], backgroundColor: colors.surface.secondary },
   counter: { fontSize: typography.sizes.bodySm, color: colors.neutral[600] },
   counterValue: { fontWeight: 'bold', color: colors.neutral[900], marginLeft: spacing[1] },
@@ -398,6 +426,9 @@ const styles = StyleSheet.create({
   qtyBtnText: { fontSize: typography.sizes.bodyMd },
   qtyDisplay: { alignSelf: 'center', fontSize: typography.sizes.bodyLg, fontWeight: 'bold', color: colors.neutral[900], minWidth: 40, textAlign: 'center' },
   qtySmall: { fontSize: typography.sizes.caption },
+  productActions: { flexDirection: 'row', gap: spacing[2], marginTop: spacing[2], paddingTop: spacing[2], borderTopWidth: 1, borderTopColor: colors.neutral[200] },
+  actionBtn: { flex: 1 },
+  actionBtnText: { textAlign: 'center', fontSize: typography.sizes.bodySm, fontWeight: '600' },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing[6] },
   emptyIcon: { fontSize: 64, marginBottom: spacing[3] },
   emptyText: { fontSize: typography.sizes.bodyMd, color: colors.neutral[500], textAlign: 'center' },
