@@ -85,7 +85,10 @@ const { products, getLowStockProducts, getStats, getExpiryAlerts, reload } = use
 
       {/* Alerta de validade */}
       {expiryCount > 0 && (
-        <View style={[styles.alertBanner, expiryAlerts.expired.length > 0 ? styles.expiredBanner : styles.expiringBanner]}>
+        <TouchableOpacity
+          style={[styles.alertBanner, expiryAlerts.expired.length > 0 ? styles.expiredBanner : styles.expiringBanner]}
+          onPress={() => navigation.navigate('Products')}
+        >
           <Text style={styles.alertIcon}>{expiryAlerts.expired.length > 0 ? '🚨' : '⏳'}</Text>
           <View style={{ flex: 1 }}>
             <Text style={styles.alertTitle}>
@@ -96,26 +99,19 @@ const { products, getLowStockProducts, getStats, getExpiryAlerts, reload } = use
             <Text style={styles.alertSub}>Reveja as datas de validade agora</Text>
           </View>
           <Text style={styles.alertArrow}>›</Text>
-        </View>
+        </TouchableOpacity>
       )}
 
       {/* Alerta de estoque baixo */}
       {lowStock.length > 0 && (
-        <View style={styles.lowStockBanner}>
+        <TouchableOpacity style={styles.lowStockBanner} onPress={() => navigation.navigate('LowStock')}>
           <Text style={styles.alertIcon}>⚠️</Text>
           <View style={{ flex: 1 }}>
             <Text style={styles.alertTitle}>{lowStock.length} produto(s) com estoque baixo</Text>
             <Text style={styles.alertSub}>Repor estoque para evitar rupturas</Text>
           </View>
-          <Button
-            variant="ghost"
-            size="sm"
-            onPress={() => navigation.navigate('LowStock')}
-            style={styles.bannerButton}
-          >
-            Ver
-          </Button>
-        </View>
+          <Text style={styles.alertArrow}>›</Text>
+        </TouchableOpacity>
       )}
 
       {/* Cards de estatísticas */}
@@ -125,24 +121,28 @@ const { products, getLowStockProducts, getStats, getExpiryAlerts, reload } = use
           label="Total de Produtos"
           value={stats.total}
           color={colors.category.medicamentos}
+          onPress={() => navigation.navigate('Products')}
         />
         <StatCard
           icon="💊"
           label="Itens Únicos"
           value={totalQuantity}
           color={colors.category.vacinas}
+          onPress={() => navigation.navigate('Products')}
         />
         <StatCard
           icon="⚠️"
           label="Estoque Baixo"
           value={stats.lowStock}
           color={colors.semantic.warning}
+          onPress={() => navigation.navigate('LowStock')}
         />
         <StatCard
           icon="💰"
           label="Valor Total"
           value={formatCurrency(stats.totalValue)}
           color={colors.category.suplementos}
+          onPress={() => navigation.navigate('Products')}
         />
       </View>
 
@@ -159,10 +159,10 @@ const { products, getLowStockProducts, getStats, getExpiryAlerts, reload } = use
         </View>
       </Card>
 
-      {/* Produtos críticos */}
+      {/* Produtos abaixo do mínimo */}
       {(lowStock.length > 0 || products.some(p => p.quantity === 0)) && (
         <View>
-          <Text style={styles.sectionTitle}>Produtos Críticos</Text>
+          <Text style={styles.sectionTitle}>Produtos Abaixo do Mínimo</Text>
           <Card variant="default" style={styles.criticalCard}>
             {(lowStock.length > 0 || products.some(p => p.quantity === 0)) ? (
               products

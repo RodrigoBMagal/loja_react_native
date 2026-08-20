@@ -65,6 +65,9 @@ export const Input = React.forwardRef<TextInput, InputProps>(
 
     const a11yLabel = accessibilityLabel || label;
 
+    // Add extra left padding when leftIcon is present
+    const inputPaddingLeft = leftIcon ? paddingH + 28 : paddingH;
+
     return (
       <View style={[styles.container, { width: fullWidth ? '100%' : undefined }, style] as ViewStyle[]}>
         {label && (
@@ -87,6 +90,7 @@ export const Input = React.forwardRef<TextInput, InputProps>(
               {
                 height,
                 paddingHorizontal: paddingH,
+                paddingLeft: inputPaddingLeft,
                 fontSize,
                 fontFamily: typography.fontFamily,
                 color: colors.neutral[900],
