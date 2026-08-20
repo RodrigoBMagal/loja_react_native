@@ -26,8 +26,9 @@ interface ProductItemProps {
   onEdit: (product: Product) => void;
   onDelete: (product: Product) => void;
   onUpdateQty: (id: number, delta: number) => void;
+  updatingId: number | null;
 }
-const ProductItem = ({ product, onEdit, onDelete, onUpdateQty }: ProductItemProps) => {
+const ProductItem = ({ product, onEdit, onDelete, onUpdateQty, updatingId }: ProductItemProps) => {
   const isLow = product.quantity <= product.minQuantity;
   const isOut = product.quantity === 0;
   const color = CATEGORY_COLORS[product.category] || '#999';
@@ -94,7 +95,7 @@ const ProductItem = ({ product, onEdit, onDelete, onUpdateQty }: ProductItemProp
             variant="secondary"
             size="sm"
             onPress={() => onUpdateQty(product.id, -1)}
-            disabled={product.quantity === 0}
+            disabled={product.quantity === 0 || updatingId === product.id}
             style={styles.qtyBtn}
           >
             <Text style={styles.qtyBtnText}>−</Text>
@@ -104,6 +105,7 @@ const ProductItem = ({ product, onEdit, onDelete, onUpdateQty }: ProductItemProp
             variant="secondary"
             size="sm"
             onPress={() => onUpdateQty(product.id, 1)}
+            disabled={updatingId === product.id}
             style={styles.qtyBtn}
           >
             <Text style={styles.qtyBtnText}>+</Text>
@@ -112,6 +114,7 @@ const ProductItem = ({ product, onEdit, onDelete, onUpdateQty }: ProductItemProp
             variant="secondary"
             size="sm"
             onPress={() => onUpdateQty(product.id, 5)}
+            disabled={updatingId === product.id}
             style={styles.qtyBtn}
           >
             <Text style={styles.qtySmall}>+5</Text>
@@ -120,6 +123,7 @@ const ProductItem = ({ product, onEdit, onDelete, onUpdateQty }: ProductItemProp
             variant="secondary"
             size="sm"
             onPress={() => onUpdateQty(product.id, 10)}
+            disabled={updatingId === product.id}
             style={styles.qtyBtn}
           >
             <Text style={styles.qtySmall}>+10</Text>
@@ -216,6 +220,9 @@ const ProductsScreen = ({ navigation }: Props) => {
 
   const { updateQuantity, deleteProduct } = useStock();
 
+  // Prevent double-tap on quantity buttons
+  const [updatingQtyId, setUpdatingQtyId] = useState<number | null>(null);
+
   const handleEdit = (product: Product) => {
     navigation.navigate('AddEditProduct', { mode: 'edit', product });
   };
@@ -226,11 +233,17 @@ const ProductsScreen = ({ navigation }: Props) => {
   };
 
   const handleUpdateQty = async (id: number, delta: number) => {
+    // Prevent double-tap: ignore if already updating this product
+    if (updatingQtyId === id) return;
+    
+    setUpdatingQtyId(id);
     try {
       await updateQuantity(id, delta);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       Alert.alert('Erro', 'Não foi possível atualizar a quantidade: ' + message);
+    } finally {
+      setUpdatingQtyId(null);
     }
   };
 
@@ -300,6 +313,7 @@ const ProductsScreen = ({ navigation }: Props) => {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onUpdateQty={handleUpdateQty}
+            updatingId={updatingQtyId}
           />
         )}
         keyExtractor={item => String(item.id)}

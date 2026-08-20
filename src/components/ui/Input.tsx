@@ -82,7 +82,7 @@ export const Input = React.forwardRef<TextInput, InputProps>(
           </Text>
         )}
         <View style={styles.inputWrapper}>
-          {leftIcon && <View style={styles.iconLeft}>{leftIcon}</View>}
+          {leftIcon && <View style={styles.iconLeft}><Text>{leftIcon}</Text></View>}
           <TextInput
             ref={ref}
             style={[
